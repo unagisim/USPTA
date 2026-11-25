@@ -137,9 +137,17 @@ button.danger {
   color: var(--danger);
   font-weight: 600;
 }
+/* Boutons secondaires (Réglages, Feuille, retour…) : cadre et fond visibles pour qu'on les reconnaisse. */
 button.ghost {
-  border-color: transparent;
-  background: transparent;
+  min-height: 44px;
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--accent);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+}
+:root[data-theme='sun'] button.ghost {
+  color: #000000;
 }
 
 input,

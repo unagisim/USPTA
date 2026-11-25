@@ -2,16 +2,20 @@
 
 import { formatPoints, type LogEntry, type MatchEvent, type Side } from './engine';
 
-export function describeEntry(entry: LogEntry, names: Record<Side, string>): string {
+/**
+ * `servers` (double) : nom de chaque joueur des équipes, pour indiquer qui servait.
+ */
+export function describeEntry(entry: LogEntry, names: Record<Side, string>, servers?: Record<Side, string[]>): string {
   const { event: e, before, outcome: o } = entry;
+  const srv = servers?.[before.server]?.[entry.serverIndex] ?? names[before.server];
   switch (e.kind) {
     case 'serve':
-      if (e.call === 'ace') return `Ace ${names[before.server]} (${ball(before.serveNumber)})`;
+      if (e.call === 'ace') return `Ace ${srv} (${ball(before.serveNumber)})`;
       if (e.call === 'net') return `Filet, ${before.serveNumber === 1 ? '1re' : '2e'} balle`;
-      if (o.serveCall === 'double_fault') return `Double faute ${names[before.server]}${e.call === 'net_fault' ? ' (filet)' : ''}`;
+      if (o.serveCall === 'double_fault') return `Double faute ${srv}${e.call === 'net_fault' ? ' (filet)' : ''}`;
       return e.call === 'net_fault' ? 'Filet, faute (1re balle)' : 'Faute (1re balle)';
     case 'point':
-      return `Point ${names[e.winner]} (service ${names[before.server]}, ${ball(before.serveNumber)})`;
+      return `Point ${names[e.winner]} (service ${srv}, ${ball(before.serveNumber)})`;
     case 'let':
       return 'Let, point à rejouer';
     case 'conduct':

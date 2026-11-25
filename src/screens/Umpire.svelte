@@ -7,7 +7,8 @@
   import EndSheet from '../components/EndSheet.svelte';
   import { fr, playCall, scoreCall } from '../lib/annonces';
   import { clock } from '../lib/device';
-  import { leftPlayer, other, pointSituation, REST_ALERTS, RESUME_CALL_AT, serveCourt, type EventInput, type Side } from '../lib/engine';
+  import { leftPlayer, other, pointSituation, receiverIndex, REST_ALERTS, RESUME_CALL_AT, serveCourt, type EventInput, type Side } from '../lib/engine';
+  import { sidePlayers } from '../lib/db';
   import { app, type LiveMatch } from '../lib/state.svelte';
 
   let { live, onExit, onSheet }: { live: LiveMatch; onExit: () => void; onSheet: () => void } = $props();
@@ -28,7 +29,7 @@
         ? [fr.interrupted]
         : r.log.length
           ? live.lastCall
-          : [playCall(live.m.players[s.server], !!live.m.info.team)]),
+          : [playCall(sidePlayers(live.m, s.server)[r.serverIndex] ?? live.m.players[s.server], !!live.m.info.team)]),
   );
 
   let panel = $state<'none' | 'sanction' | 'time' | 'correct' | 'end'>('none');
@@ -66,8 +67,27 @@
   const court = $derived(serveCourt(s, live.config));
   const second = $derived(s.serveNumber === 2);
   const serveInfo = $derived(
-    `${names[s.server]} · ${court === 'right' ? 'côté droit' : court === 'left' ? 'côté gauche' : 'choix du relanceur'}`,
+    `${live.doubles ? live.playerOf(s.server, r.serverIndex) : names[s.server]} · ${court === 'right' ? 'côté droit' : court === 'left' ? 'côté gauche' : 'choix du relanceur'}`,
   );
+
+  // ---- Double : ordre de service au début de chaque manche ----
+  const setNo = $derived(s.completedSets.length + 1);
+  const askOrder = $derived(
+    live.doubles && !over && setNo > 1 && r.serveOrderSet !== setNo && s.games.A + s.games.B === 0 && s.points.A + s.points.B === 0,
+  );
+  let order = $state<Record<Side, 0 | 1>>({ A: 0, B: 0 });
+  let receive = $state<Record<Side, 0 | 1>>({ A: 0, B: 0 });
+  $effect(() => {
+    if (askOrder) {
+      order = { ...r.serveOrder };
+      receive = { ...r.receiveOrder };
+    }
+  });
+  async function confirmOrder() {
+    await add({ kind: 'serve_order', first: { ...order }, receive: { ...receive } });
+  }
+  /** Double : qui relance le prochain point (null au point décisif : choix de l'équipe). */
+  const receiver = $derived(live.doubles && !over ? receiverIndex(s, live.config, r.receiveOrder) : null);
 
   // ---- Temps ----
   let dismissedRest = $state(0);
@@ -156,11 +176,38 @@
       <button class="primary" onclick={onSheet}>Voir la feuille de match</button>
     </div>
   {:else}
+    {#if askOrder}
+      <section class="order" aria-label="Ordre de service">
+        <strong>Manche {setNo} : qui sert en premier dans chaque équipe ?</strong>
+        {#each ['A', 'B'] as const as t (t)}
+          <div class="seg">
+            {#each [0, 1] as const as i (i)}
+              <button aria-pressed={order[t] === i} onclick={() => (order = { ...order, [t]: i })}>{live.playerOf(t, i)}</button>
+            {/each}
+          </div>
+        {/each}
+        <strong>Qui relance côté droit dans chaque équipe ?</strong>
+        {#each ['A', 'B'] as const as t (t)}
+          <div class="seg">
+            {#each [0, 1] as const as i (i)}
+              <button aria-pressed={receive[t] === i} onclick={() => (receive = { ...receive, [t]: i })}>{live.playerOf(t, i)}</button>
+            {/each}
+          </div>
+        {/each}
+        <button class="primary" onclick={confirmOrder}>Valider les positions de la manche</button>
+      </section>
+    {/if}
     <section class="serve" class:second aria-label="Service">
       <div class="serve-head">
         <span class="num">{second ? '2e service' : '1er service'}</span>
         <span class="who">{serveInfo}</span>
       </div>
+      {#if live.doubles}
+        <p class="recv">
+          Relance : {receiver === null ? "choix de l'équipe" : live.playerOf(other(s.server), receiver)}
+          <span class="muted">· {names[other(s.server)]}</span>
+        </p>
+      {/if}
       <div class="serve-row">
         <button onclick={() => add({ kind: 'serve', call: 'fault' })}>
           {second ? 'Double faute' : 'Faute'}<small>« {fr.fault} »</small>
@@ -236,6 +283,15 @@
     font-variant-numeric: tabular-nums;
     font-weight: 600;
   }
+  .order {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+    border-radius: var(--radius);
+    background: var(--warn-bg);
+    color: var(--warn);
+  }
   .serve {
     border: 2px solid var(--border);
     border-radius: var(--radius);
@@ -265,6 +321,13 @@
   .second .num {
     background: var(--warn);
     color: var(--warn-bg);
+  }
+  .recv {
+    margin: 0;
+    font-weight: 600;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
   .serve-head .who {
     flex: 1;

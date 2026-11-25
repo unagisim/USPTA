@@ -6,14 +6,50 @@ import { fr, type Phrases } from './phrases';
 export interface AnnounceContext {
   config: MatchConfig;
   players: Record<Side, Player>;
+  /** Double : partenaire de chaque joueur de `players`. Absent en simple. */
+  partners?: Record<Side, Player>;
   /** Match par équipes : le score s'annonce avec le nom du club. */
   team?: boolean;
   phrases?: Phrases;
 }
 
-/** Nom affiché à l'écran : civilité, prénom et nom, ou civilité et nom. */
-export function playerName(p: Player, style: 'full' | 'short' = 'full'): string {
-  return style === 'short' ? `${p.civility} ${p.lastName}` : `${p.civility} ${p.firstName} ${p.lastName}`;
+/** Joueurs d'un côté : un en simple, deux en double. */
+export function members(players: Record<Side, Player>, partners: Record<Side, Player> | undefined, s: Side): Player[] {
+  return partners ? [players[s], partners[s]] : [players[s]];
+}
+
+/** Nom d'un côté dans les annonces du score : « Dupont », ou « Dupont / Mme Martin » en double. */
+export function sideCallName(players: Player[], team = false): string {
+  const club = players[0].club?.trim();
+  if (team && club) return club;
+  return players.map((p) => callName(p)).join(' / ');
+}
+
+/** Forme du nom à l'écran : « Paul Dupont », « P. Dupont », « Dupont » ou « Paul ». */
+export type NameFormat = 'first_last' | 'initial_last' | 'last' | 'first';
+
+export interface NameStyle {
+  format: NameFormat;
+  /** « M. », « Mme » ou « Mlle » devant le nom. */
+  civility: boolean;
+}
+
+export const FULL_NAME: NameStyle = { format: 'first_last', civility: true };
+
+/** Nom affiché à l'écran et dans la présentation, selon les réglages. */
+export function playerName(p: Player, style: NameStyle | 'short' = FULL_NAME): string {
+  const st: NameStyle = style === 'short' ? { format: 'last', civility: true } : style;
+  const first = p.firstName.trim();
+  const last = p.lastName.trim();
+  const body =
+    st.format === 'first'
+      ? first || last
+      : st.format === 'last'
+        ? last
+        : st.format === 'initial_last'
+          ? [first ? `${first[0].toUpperCase()}.` : '', last].filter(Boolean).join(' ')
+          : [first, last].filter(Boolean).join(' ');
+  return st.civility ? `${p.civility} ${body}` : body;
 }
 
 export const isFeminine = (p: Player) => p.civility !== 'M.';
@@ -32,7 +68,7 @@ const LABELS = ['0', '15', '30', '40'];
 /** Score du jeu en cours, à annoncer avant le prochain point. */
 export function scoreCall(s: ScoreState, ctx: AnnounceContext): string {
   const t = ctx.phrases ?? fr;
-  const name = (side: Side) => callName(ctx.players[side], ctx.team);
+  const name = (side: Side) => sideCallName(members(ctx.players, ctx.partners, side), ctx.team);
   const { A, B } = s.points;
   // Début de jeu : rien à annoncer.
   if (A === 0 && B === 0) return '';
@@ -56,7 +92,9 @@ export function scoreCall(s: ScoreState, ctx: AnnounceContext): string {
 /** Lignes d'annonce pour une entrée du journal du match. */
 export function announce(entry: LogEntry, ctx: AnnounceContext): string[] {
   const t = ctx.phrases ?? fr;
-  const name = (side: Side) => callName(ctx.players[side], ctx.team);
+  const name = (side: Side) => sideCallName(members(ctx.players, ctx.partners, side), ctx.team);
+  /** Joueur au service (le bon partenaire en double). */
+  const server = (side: Side, idx: 0 | 1) => callName(members(ctx.players, ctx.partners, side)[idx] ?? ctx.players[side], ctx.team);
   const { event: e, before, after, outcome: o } = entry;
   const lines: string[] = [];
 
@@ -87,7 +125,17 @@ export function announce(entry: LogEntry, ctx: AnnounceContext): string[] {
     if (before.isSuperTiebreakSet) {
       if (before.points.A + before.points.B > 0) scores.push(`${before.points[w]}/${before.points[other(w)]}`);
     } else if (g.A + g.B > 0) scores.push(`${g[w]}/${g[other(w)]}`);
-    lines.push(t.matchEnd(playerName(ctx.players[e.loser], 'short'), isFeminine(ctx.players[e.loser]), name(w), e.type, scores));
+    const losers = members(ctx.players, ctx.partners, e.loser);
+    lines.push(
+      t.matchEnd(
+        losers.map((p) => playerName(p, 'short')).join(' et '),
+        losers.every(isFeminine),
+        name(w),
+        e.type,
+        scores,
+        losers.length > 1,
+      ),
+    );
     return lines;
   }
 
@@ -118,7 +166,7 @@ export function announce(entry: LogEntry, ctx: AnnounceContext): string[] {
     }
     lines.push(t.game(name(w), score));
     // Après le premier jeu d'une manche, les joueurs changent de côté puis l'arbitre annonce le serveur.
-    if (A + B === 1) lines.push(t.serving(name(after.server)));
+    if (A + B === 1) lines.push(t.serving(server(after.server, entry.serverIndexAfter)));
     // Points de pénalité reportés sur le jeu suivant.
     if (after.points.A + after.points.B > 0) lines.push(scoreCall(after, ctx));
   } else if (scoreChanged) {

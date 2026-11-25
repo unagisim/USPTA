@@ -4,14 +4,17 @@
   import type { TossChoice } from '../lib/db';
   import { ballsRule, presentation, TWO_MINUTES } from '../lib/annonces';
   import { clock } from '../lib/device';
-  import { FORMATS, other, PRESENTATION_AT, WARMUP_CALLS, WARMUP_TWO_MINUTES, type Side } from '../lib/engine';
-  import { app, type LiveMatch } from '../lib/state.svelte';
+  import { FORMATS, other, PRESENTATION_AT, PRESENTATION_AT_DOUBLES, WARMUP_TWO_MINUTES, type Side } from '../lib/engine';
+  import { app, nameStyle, type LiveMatch } from '../lib/state.svelte';
 
   let { live, onExit }: { live: LiveMatch; onExit: () => void } = $props();
 
   const m = $derived(live.m);
   const name = (s: Side) => live.name(s);
   const format = $derived(FORMATS[m.formatId]);
+  /** Présentation à 40 s de la fin de l'échauffement, 50 s en double. */
+  const presAt = $derived(live.doubles ? PRESENTATION_AT_DOUBLES : PRESENTATION_AT);
+  const presClock = $derived(`0:${String(presAt).padStart(2, '0')}`);
   const warmupMin = $derived(Math.round(app.settings.durations.warmup / 60));
 
   // Mémo de la procédure d'avant-match, dans l'ordre : rien à cocher, seulement à lire.
@@ -74,6 +77,14 @@
     m.colors = { ...live.colors, [s]: c };
     await live.save();
   }
+  async function setOrder(s: Side, i: 0 | 1) {
+    m.serveOrder = { ...(m.serveOrder ?? { A: 0, B: 0 }), [s]: i };
+    await live.save();
+  }
+  async function setReceive(s: Side, i: 0 | 1) {
+    m.receiveOrder = { ...(m.receiveOrder ?? { A: 0, B: 0 }), [s]: i };
+    await live.save();
+  }
   async function setLeft(s: Side) {
     m.leftAtStart = s;
     await live.save();
@@ -85,7 +96,7 @@
   /** Étape de l'échauffement : avant les 2 minutes, annonce des 2 minutes (15 s), attente, présentation. */
   const stage = $derived.by(() => {
     if (warmupLeft === null) return 'idle';
-    if (warmupLeft <= PRESENTATION_AT) return 'presentation';
+    if (warmupLeft <= presAt) return 'presentation';
     if (warmupLeft <= WARMUP_TWO_MINUTES && warmupLeft > WARMUP_TWO_MINUTES - 15) return 'two_minutes';
     if (warmupLeft <= WARMUP_TWO_MINUTES) return 'before_presentation';
     return 'before_two_minutes';
@@ -96,10 +107,11 @@
       competition: m.info.tournament,
       round: m.info.round,
       players: m.players,
+      ...(live.doubles && m.partners ? { partners: m.partners } : {}),
       left: m.leftAtStart,
       format,
       toss: m.toss,
-      nameStyle: app.settings.nameStyle,
+      nameStyle: nameStyle(),
       team: !!m.info.team,
     }),
   );
@@ -186,7 +198,7 @@
           label="Échauffement"
           start={warmup.start}
           duration={app.settings.durations.warmup}
-          alerts={WARMUP_CALLS}
+          alerts={[WARMUP_TWO_MINUTES, presAt, 0]}
           endText="Fin de l'échauffement"
           onStop={stopWarmup}
         />
@@ -200,7 +212,7 @@
       {:else if stage === 'before_two_minutes'}
         <p class="next">À 2:00 : annoncer « {TWO_MINUTES} »</p>
       {:else if stage === 'before_presentation'}
-        <p class="next">À 0:{String(PRESENTATION_AT).padStart(2, '0')} : présentation du match (ci-dessous)</p>
+        <p class="next">À {presClock} : présentation du match (ci-dessous)</p>
       {/if}
     {:else}
       <button class="primary" onclick={startWarmup}>Lancer l'échauffement ({clock(app.settings.durations.warmup * 1000)})</button>
@@ -232,15 +244,36 @@
       {/if}
     {/if}
     <div>
-      <label for="fs">Premier serveur</label>
+      <label for="fs">{live.doubles ? 'Équipe au service' : 'Premier serveur'}</label>
       <div class="seg" id="fs">
         {#each ['A', 'B'] as const as s (s)}
           <button aria-pressed={m.firstServer === s} onclick={() => setServer(s)}>{name(s)}</button>
         {/each}
       </div>
     </div>
+    {#if live.doubles}
+      {#each ['A', 'B'] as const as s (s)}
+        <div>
+          <label for="so{s}">Premier serveur de l'équipe {name(s)}</label>
+          <div class="seg" id="so{s}">
+            {#each [0, 1] as const as i (i)}
+              <button aria-pressed={(m.serveOrder ?? { A: 0, B: 0 })[s] === i} onclick={() => setOrder(s, i)}>{live.playerOf(s, i)}</button>
+            {/each}
+          </div>
+        </div>
+        <div>
+          <label for="ro{s}">Relanceur côté droit de l'équipe {name(s)}</label>
+          <div class="seg" id="ro{s}">
+            {#each [0, 1] as const as i (i)}
+              <button aria-pressed={(m.receiveOrder ?? { A: 0, B: 0 })[s] === i} onclick={() => setReceive(s, i)}>{live.playerOf(s, i)}</button>
+            {/each}
+          </div>
+        </div>
+      {/each}
+      <p class="muted hint">Les positions en relance ne changent qu'au début de chaque manche ; l'application les redemande alors.</p>
+    {/if}
     <div>
-      <label for="lp">Joueur à gauche de la chaise</label>
+      <label for="lp">{live.doubles ? 'Équipe à gauche de la chaise' : 'Joueur à gauche de la chaise'}</label>
       <div class="seg" id="lp">
         {#each ['A', 'B'] as const as s (s)}
           <button aria-pressed={m.leftAtStart === s} onclick={() => setLeft(s)}>{name(s)}</button>
@@ -250,7 +283,7 @@
   </div>
 
   <div class="card stack">
-    <h2>Présentation du match <span class="muted">à 0:{String(PRESENTATION_AT).padStart(2, '0')}</span></h2>
+    <h2>Présentation du match <span class="muted">à {presClock}</span></h2>
     <div class="speech">
       {#each intro as line (line)}<p class:missing={line.startsWith('[')}>{line}</p>{/each}
     </div>

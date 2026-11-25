@@ -55,7 +55,14 @@ export interface StoredMatch {
   createdAt: number;
   updatedAt: number;
   info: MatchInfo;
+  /** En double, `players` est le premier joueur de chaque équipe, `partners` le second. */
   players: { A: Player; B: Player };
+  doubles?: boolean;
+  partners?: { A: Player; B: Player };
+  /** Double : joueur de chaque équipe qui sert en premier dans la première manche. */
+  serveOrder?: Record<Side, 0 | 1>;
+  /** Double : relanceur côté droit de chaque équipe dans la première manche. */
+  receiveOrder?: Record<Side, 0 | 1>;
   formatId: FormatId;
   balls: BallChange;
   firstServer: Side;
@@ -70,7 +77,8 @@ export interface StoredMatch {
   winner: Side | null;
 }
 
-export type NameStyle = 'full' | 'short';
+import type { NameFormat } from './annonces/announce';
+export type { NameFormat };
 export type Theme = 'auto' | 'light' | 'dark' | 'sun';
 
 export interface Settings {
@@ -79,7 +87,10 @@ export interface Settings {
   durations: Durations;
   sound: boolean;
   vibrate: boolean;
-  nameStyle: NameStyle;
+  /** Forme des noms à l'écran et dans la présentation. */
+  nameFormat: NameFormat;
+  /** Civilité (M., Mme, Mlle) devant les noms à l'écran. */
+  civility: boolean;
   theme: Theme;
 }
 
@@ -115,7 +126,8 @@ export const defaultSettings = (): Settings => ({
   durations: { ...DEFAULT_DURATIONS },
   sound: true,
   vibrate: true,
-  nameStyle: 'full',
+  nameFormat: 'first_last',
+  civility: true,
   theme: 'auto',
 });
 
@@ -139,7 +151,12 @@ export const configOf = (m: StoredMatch): MatchConfig => ({
   firstServer: m.firstServer,
   leftAtStart: m.leftAtStart,
   balls: m.balls,
+  ...(m.doubles ? { serveOrder: m.serveOrder ?? { A: 0, B: 0 }, receiveOrder: m.receiveOrder ?? { A: 0, B: 0 } } : {}),
 });
+
+/** Joueurs d'un côté : un en simple, deux en double. */
+export const sidePlayers = (m: StoredMatch, s: Side): Player[] =>
+  m.doubles && m.partners ? [m.players[s], m.partners[s]] : [m.players[s]];
 
 /** Copie simple : les objets réactifs de Svelte ne peuvent pas être stockés tels quels. */
 export const plain = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
@@ -147,6 +164,10 @@ export const plain = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 export async function loadSettings(): Promise<Settings> {
   const s = await db.settings.get('settings');
   const merged = { ...defaultSettings(), ...s };
+  // Anciens réglages : « full » (M. Paul Dupont) ou « short » (M. Dupont).
+  const legacy = (s as { nameStyle?: string } | undefined)?.nameStyle;
+  if (legacy && !(s as { nameFormat?: string }).nameFormat) merged.nameFormat = legacy === 'short' ? 'last' : 'first_last';
+  delete (merged as { nameStyle?: string }).nameStyle;
   if (JSON.stringify(merged.offences) === JSON.stringify(OLD_OFFENCES)) merged.offences = [...DEFAULT_OFFENCES];
   return merged;
 }

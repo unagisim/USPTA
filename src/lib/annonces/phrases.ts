@@ -40,6 +40,8 @@ export interface Phrases {
     winner: string,
     reason: 'retirement' | 'disqualification' | 'walkover',
     scores: string[],
+    /** Double : l'équipe entière (accord au pluriel). */
+    plural?: boolean,
   ): string;
   /** Début d'une interruption (pluie, nuit…). */
   interrupted: string;
@@ -88,10 +90,11 @@ export const fr: Phrases = {
   setWon: (set, n, hi, lo, all, stb) =>
     `Jeu et ${set} ${n}, ${hi} ${jeux(hi)} à ${lo}${all ? ', une manche partout' : ''}${stb ? ', super jeu décisif' : ''}.`,
   matchWon: (n, won, lost, scores) => `Jeu, set et match ${n} ${won} manches à ${lost}, ${scores.join('-')}`,
-  matchEnd: (loser, fem, winner, reason, scores) => {
+  matchEnd: (loser, fem, winner, reason, scores, plural = false) => {
     if (reason === 'walkover') return `Victoire de ${winner} par forfait`;
-    const e = fem ? 'e' : '';
-    const what = reason === 'retirement' ? `est contraint${e} d'abandonner` : `est disqualifié${e}`;
+    const e = (fem ? 'e' : '') + (plural ? 's' : '');
+    const verb = plural ? 'sont' : 'est';
+    const what = reason === 'retirement' ? `${verb} contraint${e} d'abandonner` : `${verb} disqualifié${e}`;
     return `Mesdames, messieurs, ${loser} ${what}, jeu set et match ${[winner, ...scores].join(' ')}.`;
   },
   interrupted: 'Mesdames, messieurs, la partie est interrompue',

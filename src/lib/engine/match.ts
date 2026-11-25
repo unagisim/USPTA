@@ -8,6 +8,7 @@ import {
   endMatch,
   initialState,
   replayPoint,
+  serveCourt,
   serveFault,
   setServer,
   type ScoreState,
@@ -65,6 +66,9 @@ export interface Outcome {
 
 export interface LogEntry {
   event: MatchEvent;
+  /** Double : joueur de l'équipe au service (0 ou 1) avant et après la saisie. Toujours 0 en simple. */
+  serverIndex: 0 | 1;
+  serverIndexAfter: 0 | 1;
   /** L'événement a été remplacé par une correction (overrule…). */
   replaced: boolean;
   before: ScoreState;
@@ -93,6 +97,13 @@ export interface ReplayResult {
   ballsDelayed: boolean;
   start: number | null;
   end: number | null;
+  /** Double : joueur de l'équipe au service pour le prochain point (0 ou 1). */
+  serverIndex: 0 | 1;
+  /** Double : ordre de service de la manche en cours, et s'il a été confirmé pour cette manche. */
+  serveOrder: Record<Side, 0 | 1>;
+  serveOrderSet: number;
+  /** Double : relanceur côté droit de chaque équipe pour la manche en cours. */
+  receiveOrder: Record<Side, 0 | 1>;
 }
 
 const SCORING = new Set<MatchEvent['kind']>(['serve', 'point', 'let', 'conduct', 'time_violation', 'set_server', 'adjust', 'end']);
@@ -170,6 +181,32 @@ export function replay(config: MatchConfig, events: readonly MatchEvent[]): Repl
 
   const balls = config.balls;
 
+  // ---- Double : qui sert dans l'équipe ----
+  // Chaque équipe alterne ses deux joueurs à chacun de ses tours de service (jeux, puis séries
+  // de points du jeu décisif). L'ordre peut changer au début de chaque manche.
+  const doubles = config.serveOrder !== undefined;
+  let serveOrder: Record<Side, 0 | 1> = { ...(config.serveOrder ?? { A: 0, B: 0 }) };
+  let serveOrderSet = 1;
+  let receiveOrder: Record<Side, 0 | 1> = { ...(config.receiveOrder ?? { A: 0, B: 0 }) };
+  let setNo = 0;
+  let turns: Pair = { A: 0, B: 0 };
+  let turnOf: Side | null = null;
+  const track = (st: ScoreState) => {
+    const n = st.completedSets.length + 1;
+    if (n !== setNo) {
+      setNo = n;
+      turns = { A: 0, B: 0 };
+      turnOf = null;
+    }
+    if (st.server !== turnOf) {
+      turnOf = st.server;
+      turns[turnOf]++;
+    }
+  };
+  const serverIndex = (st: ScoreState): 0 | 1 =>
+    doubles ? (((serveOrder[st.server] + turns[st.server] - 1) % 2) as 0 | 1) : 0;
+  track(s);
+
   /** Balles neuves après ce jeu ? Reportées au 2e jeu du set suivant si un jeu décisif commence. */
   const checkBalls = (before: ScoreState, after: ScoreState, o: Outcome) => {
     if (after.winner) return;
@@ -203,6 +240,12 @@ export function replay(config: MatchConfig, events: readonly MatchEvent[]): Repl
       continue;
     }
     if (e.kind === 'note') continue;
+    if (e.kind === 'serve_order') {
+      serveOrder = { ...e.first };
+      if (e.receive) receiveOrder = { ...e.receive };
+      serveOrderSet = s.completedSets.length + 1;
+      continue;
+    }
     if (e.kind === 'timer') {
       if (e.action === 'start') {
         if (e.timer === 'toilet' && e.player) toiletBreaks[e.player]++;
@@ -274,7 +317,9 @@ export function replay(config: MatchConfig, events: readonly MatchEvent[]): Repl
     if (outcome.rest !== 'none') lastRest = { rest: outcome.rest, start: e.ts };
     else if (outcome.pointWinner || serveCall) lastRest = null;
     if (s.winner && !before.winner) end = e.ts;
-    log.push({ event: e, replaced, before, after: s, outcome });
+    const idxBefore = serverIndex(before);
+    track(s);
+    log.push({ event: e, replaced, before, after: s, outcome, serverIndex: idxBefore, serverIndexAfter: serverIndex(s) });
   }
 
   return {
@@ -289,5 +334,20 @@ export function replay(config: MatchConfig, events: readonly MatchEvent[]): Repl
     ballsDelayed,
     start,
     end,
+    serverIndex: serverIndex(s),
+    serveOrder,
+    serveOrderSet,
+    receiveOrder,
   };
+}
+
+/**
+ * Double : joueur de l'équipe en relance pour le prochain point, d'après le côté du service.
+ * Null au point décisif, où l'équipe en relance choisit son relanceur.
+ */
+export function receiverIndex(s: ScoreState, config: MatchConfig, receiveOrder: Record<Side, 0 | 1>): 0 | 1 | null {
+  const court = serveCourt(s, config);
+  if (court === 'receiver_choice') return null;
+  const right = receiveOrder[other(s.server)];
+  return court === 'right' ? right : ((1 - right) as 0 | 1);
 }

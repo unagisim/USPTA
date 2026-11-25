@@ -3,10 +3,11 @@
 import { jsPDF } from 'jspdf';
 import { autoTable, type RowInput } from 'jspdf-autotable';
 import { ballsRule } from '../annonces';
-import type { StoredMatch } from '../db';
+import { COLOR_HEX, DEFAULT_COLORS } from '../colors';
+import { sidePlayers, type StoredMatch } from '../db';
 import { clock, hour } from '../device';
-import { FORMATS, other, serveStatRows, serveStats, type ReplayResult, type SetScore, type Side } from '../engine';
-import { resultText, sheetRows, TOSS_CHOICES, type SheetRow } from '../sheet';
+import { FORMATS, other, type ReplayResult, type SetScore, type Side } from '../engine';
+import { resultText, setTimes, sheetRows, statTables, TOSS_CHOICES, type SheetRow } from '../sheet';
 
 type RGB = [number, number, number];
 const INK: RGB = [21, 26, 23];
@@ -30,6 +31,23 @@ const txt = (s: string) =>
     .replace(/→/g, '->')
     .replace(/✓/g, 'v')
     .replace(/[^\u0000-ÿ€…–—‘’“”•œŒ]/g, '');
+
+/** Image du logo, chargée par l'appelant (absente dans les tests). */
+export interface PdfLogo {
+  data: string;
+  width: number;
+  height: number;
+}
+
+const hexRgb = (h: string): RGB => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+
+/** Pastille de la couleur du joueur, cerclée de gris pour que le blanc reste visible. */
+function dot(doc: jsPDF, x: number, y: number, hex: string) {
+  doc.setFillColor(...hexRgb(hex));
+  doc.setDrawColor(150, 155, 152);
+  doc.setLineWidth(0.2);
+  doc.circle(x, y, 1.5, 'FD');
+}
 
 function ensureSpace(doc: jsPDF, y: number, needed: number): number {
   if (y + needed <= PAGE_H - 20) return y;
@@ -85,8 +103,15 @@ function logTable(doc: jsPDF, y: number, rows: SheetRow[]): number {
   return lastY(doc);
 }
 
-export function buildSheetPdf(m: StoredMatch, r: ReplayResult, names: Record<Side, string>): { blob: Blob; fileName: string } {
+export function buildSheetPdf(
+  m: StoredMatch,
+  r: ReplayResult,
+  names: Record<Side, string>,
+  logo?: PdfLogo,
+): { blob: Blob; fileName: string } {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const colors = m.colors ?? DEFAULT_COLORS;
+  const hex = (s: Side) => COLOR_HEX[colors[s]];
   const format = FORMATS[m.formatId];
   const s = r.state;
   const day = date(r.start || m.createdAt);
@@ -94,6 +119,11 @@ export function buildSheetPdf(m: StoredMatch, r: ReplayResult, names: Record<Sid
   doc.setProperties({ title: txt(title), creator: 'USPTA' });
 
   // ---- En-tête ----
+  if (logo) {
+    const h = 24;
+    const w = (logo.width / logo.height) * h;
+    doc.addImage(logo.data, logo.data.startsWith('data:image/png') ? 'PNG' : 'JPEG', PAGE_W - MARGIN - w, MARGIN - 4, w, h);
+  }
   let y = MARGIN + 4;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(17);
@@ -130,20 +160,33 @@ export function buildSheetPdf(m: StoredMatch, r: ReplayResult, names: Record<Sid
   autoTable(doc, {
     startY: y,
     margin: { left: MARGIN, right: MARGIN },
-    head: [['', 'Joueur', 'Club', 'Classement', 'Au départ']],
-    body: (['A', 'B'] as const).map((p, i) => {
-      const pl = m.players[p];
+    head: [['', m.doubles ? 'Équipe' : 'Joueur', 'Club', 'Classement', 'Au départ']],
+    body: (['A', 'B'] as const).map((p) => {
+      const ps = sidePlayers(m, p);
+      const order = m.serveOrder ?? { A: 0, B: 0 };
       const start = [
         m.leftAtStart === p ? 'à gauche de la chaise' : 'à droite de la chaise',
-        m.firstServer === p ? '1er serveur' : '',
+        m.firstServer === p ? (m.doubles ? 'au service' : '1er serveur') : '',
+        m.doubles ? `1er serveur de l'équipe : ${ps[order[p]]?.lastName ?? ''}` : '',
+        m.doubles ? `relance côté droit : ${ps[(m.receiveOrder ?? { A: 0, B: 0 })[p]]?.lastName ?? ''}` : '',
         tossWinner === p ? `tirage gagné (${TOSS_CHOICES[m.toss!.choice]})` : '',
       ].filter(Boolean);
-      return [String(i + 1), txt(names[p]), txt(pl.club || ''), txt(pl.ranking || ''), txt(start.join(', '))];
+      const full = ps.map((x) => `${x.civility} ${x.firstName} ${x.lastName}`.replace(/ +/g, ' ')).join('\n');
+      return [
+        '',
+        txt(m.doubles ? full : names[p]),
+        txt(ps.map((x) => x.club || '').join('\n')),
+        txt(ps.map((x) => x.ranking || '').join('\n')),
+        txt(start.join(', ')),
+      ];
     }),
     theme: 'grid',
-    styles: { fontSize: 9, cellPadding: 1.6, lineColor: LINE, lineWidth: 0.2, textColor: INK },
+    styles: { fontSize: 9, cellPadding: 1.6, lineColor: LINE, lineWidth: 0.2, textColor: INK, valign: 'top' },
     headStyles: { fillColor: LIGHT, textColor: INK, fontStyle: 'bold' },
-    columnStyles: { 0: { cellWidth: 7, halign: 'center' }, 1: { fontStyle: 'bold' }, 3: { cellWidth: 22 } },
+    columnStyles: { 0: { cellWidth: 7 }, 1: { fontStyle: 'bold' }, 3: { cellWidth: 22 } },
+    didDrawCell: (d) => {
+      if (d.section === 'body' && d.column.index === 0) dot(doc, d.cell.x + 3.5, d.cell.y + 3.6, hex(d.row.index === 0 ? 'A' : 'B'));
+    },
   });
   y = lastY(doc) + 8;
 
@@ -157,7 +200,13 @@ export function buildSheetPdf(m: StoredMatch, r: ReplayResult, names: Record<Sid
     const cells = sets.map((set) => setCell(set, p));
     if (inProgress) cells.push(s.isSuperTiebreakSet ? `${s.points[p]}` : `${s.games[p]}`);
     while (cells.length < setCount) cells.push('');
-    return [{ content: txt(`${names[p]}${s.winner === p ? '  (vainqueur)' : ''}`), styles: { fontStyle: s.winner === p ? 'bold' : 'normal' } }, ...cells];
+    return [
+      {
+        content: txt(`${names[p]}${s.winner === p ? '  (vainqueur)' : ''}`),
+        styles: { fontStyle: s.winner === p ? 'bold' : 'normal', cellPadding: { left: 6, top: 1.8, bottom: 1.8, right: 1.8 } },
+      },
+      ...cells,
+    ];
   });
   autoTable(doc, {
     startY: y,
@@ -168,6 +217,9 @@ export function buildSheetPdf(m: StoredMatch, r: ReplayResult, names: Record<Sid
     styles: { fontSize: 10, cellPadding: 1.8, lineColor: LINE, lineWidth: 0.2, textColor: INK, halign: 'center' },
     headStyles: { fillColor: LIGHT, textColor: INK, fontStyle: 'bold' },
     columnStyles: { 0: { halign: 'left', cellWidth: 80 } },
+    didDrawCell: (d) => {
+      if (d.section === 'body' && d.column.index === 0) dot(doc, d.cell.x + 3, d.cell.y + d.cell.height / 2, hex(d.row.index === 0 ? 'A' : 'B'));
+    },
   });
   y = lastY(doc) + 5;
   doc.setFontSize(10);
@@ -175,15 +227,24 @@ export function buildSheetPdf(m: StoredMatch, r: ReplayResult, names: Record<Sid
   doc.setFont('helvetica', 'bold');
   doc.text(txt(result), MARGIN, y);
   doc.setFont('helvetica', 'normal');
-  y += 5;
-  const times = [
-    `Début : ${r.start ? hour(r.start) : '—'}`,
-    `Fin : ${r.end ? hour(r.end) : '—'}`,
-    r.start && r.end ? `Durée : ${clock(r.end - r.start)}` : '',
-  ].filter(Boolean);
-  doc.setFontSize(9.5);
-  doc.text(txt(times.join('  ·  ')), MARGIN, y);
-  y += 8;
+  y += 3;
+  const span = (a: number | null, b: number | null) => (a && b ? clock(b - a) : '—');
+  const hr = (x: number | null) => (x ? hour(x) : '—');
+  autoTable(doc, {
+    startY: y,
+    margin: { left: MARGIN, right: MARGIN },
+    head: [['', 'Début', 'Fin', 'Durée']],
+    body: [
+      ...setTimes(r).map((t) => [`Manche ${t.set}`, hr(t.start), hr(t.end), span(t.start, t.end)]),
+      [{ content: 'Match', styles: { fontStyle: 'bold' } }, hr(r.start), hr(r.end), { content: span(r.start, r.end), styles: { fontStyle: 'bold' } }],
+    ],
+    theme: 'grid',
+    tableWidth: 110,
+    styles: { fontSize: 9, cellPadding: 1.3, lineColor: LINE, lineWidth: 0.2, textColor: INK, halign: 'right' },
+    headStyles: { fillColor: LIGHT, textColor: INK, fontStyle: 'bold' },
+    columnStyles: { 0: { halign: 'left' } },
+  });
+  y = lastY(doc) + 8;
 
   // ---- Sanctions et pauses ----
   y = ensureSpace(doc, y, 30);
@@ -202,27 +263,38 @@ export function buildSheetPdf(m: StoredMatch, r: ReplayResult, names: Record<Sid
 
   // ---- Statistiques au service ----
   const statSets = s.completedSets.length + (s.winner ? 0 : 1);
-  const statHead = ['', ...(['A', 'B'] as const).map((p) => txt(m.players[p].lastName))];
-  const statBody: RowInput[] = [];
   const sections: [string, number | undefined][] = [['Match', undefined]];
   if (statSets > 1) for (let k = 1; k <= statSets; k++) sections.push([`Manche ${k}`, k]);
-  for (const [label, k] of sections) {
-    if (sections.length > 1) statBody.push([{ content: label, colSpan: 3, styles: { fillColor: LIGHT, fontStyle: 'bold' } }]);
-    for (const [l, a, b] of serveStatRows(serveStats(r.log, k))) statBody.push([txt(l), a, b]);
-  }
   y = ensureSpace(doc, y, 50);
   y = heading(doc, y, 'Statistiques au service');
-  autoTable(doc, {
-    startY: y,
-    margin: { left: MARGIN, right: MARGIN },
-    head: [statHead],
-    body: statBody,
-    theme: 'grid',
-    styles: { fontSize: 8.5, cellPadding: 1.3, lineColor: LINE, lineWidth: 0.2, textColor: INK, halign: 'right' },
-    headStyles: { fillColor: [255, 255, 255], textColor: INK, fontStyle: 'bold' },
-    columnStyles: { 0: { halign: 'left', cellWidth: 70 } },
-  });
-  y = lastY(doc) + 8;
+  // En double : d'abord par équipe, puis un tableau par équipe avec ses deux joueurs.
+  for (const byPlayer of m.doubles ? [false, true] : [false]) {
+    const count = statTables(m, r.log, undefined, byPlayer).length;
+    for (let ti = 0; ti < count; ti++) {
+      const cols = statTables(m, r.log, undefined, byPlayer)[ti].cols;
+      const body: RowInput[] = [];
+      for (const [label, k] of sections) {
+        if (sections.length > 1) body.push([{ content: label, colSpan: cols.length + 1, styles: { fillColor: LIGHT, fontStyle: 'bold' } }]);
+        for (const row of statTables(m, r.log, k, byPlayer)[ti].rows) body.push(row.map(txt));
+      }
+      y = ensureSpace(doc, y, 40);
+      autoTable(doc, {
+        startY: y,
+        margin: { left: MARGIN, right: MARGIN },
+        head: [['', ...cols.map((c) => txt(c.label))]],
+        body,
+        theme: 'grid',
+        styles: { fontSize: 8.5, cellPadding: 1.3, lineColor: LINE, lineWidth: 0.2, textColor: INK, halign: 'right' },
+        headStyles: { fillColor: [255, 255, 255], textColor: INK, fontStyle: 'bold', cellPadding: { left: 6, top: 1.3, bottom: 1.3, right: 1.3 } },
+        columnStyles: { 0: { halign: 'left', cellWidth: 70 } },
+        didDrawCell: (d) => {
+          if (d.section === 'head' && d.column.index > 0) dot(doc, d.cell.x + 3, d.cell.y + d.cell.height / 2, hex(cols[d.column.index - 1].side));
+        },
+      });
+      y = lastY(doc) + 5;
+    }
+  }
+  y += 3;
 
   // ---- Incidents ----
   const rows = sheetRows(m, r, names);

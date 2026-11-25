@@ -1,7 +1,7 @@
 // Annonces d'avant-match : présentation à la fin de l'échauffement et lancement du match.
 
 import { other, type BallChange, type MatchFormat, type Player, type Side } from '../engine';
-import { callName, playerName } from './announce';
+import { callName, members, playerName, type NameStyle } from './announce';
 
 export type TossChoice = 'serve' | 'receive' | 'side' | 'defer';
 
@@ -11,11 +11,13 @@ export interface PresentationData {
   /** Tour, poule ou journée : « 2e journée ». */
   round: string;
   players: Record<Side, Player>;
+  /** Double : partenaires. */
+  partners?: Record<Side, Player>;
   /** Joueur à gauche de la chaise au premier jeu. */
   left: Side;
   format: MatchFormat;
   toss: { winner: Side; choice: TossChoice } | null;
-  nameStyle?: 'full' | 'short';
+  nameStyle?: NameStyle;
   /** Match par équipes : chaque joueur est présenté avec son club. */
   team?: boolean;
 }
@@ -45,9 +47,17 @@ export function ballsRule(b: BallChange): string {
   return 'Pas de changement de balles';
 }
 
+function tossLine(winner: string, choice: TossChoice, plural: boolean): string {
+  const c = TOSS_FR[choice];
+  return plural ? `${winner} ont gagné le tirage au sort et ${c.replace(/^a /, 'ont ')}.` : `${winner} a gagné le tirage au sort et ${c}.`;
+}
+
 /** Présentation du match, à faire à 40 secondes de la fin de l'échauffement. */
 export function presentation(d: PresentationData): string[] {
-  const name = (s: Side) => playerName(d.players[s], d.nameStyle);
+  const name = (s: Side) =>
+    members(d.players, d.partners, s)
+      .map((p) => playerName(p, d.nameStyle))
+      .join(' et ');
   const intro = [d.round.trim(), d.competition.trim()].filter(Boolean).join(', ');
   const right = other(d.left);
   const named = (s: Side) => {
@@ -57,7 +67,7 @@ export function presentation(d: PresentationData): string[] {
   const lines = [
     `${intro || 'Match'}, opposant à droite de la chaise ${named(right)}, à gauche de la chaise ${named(d.left)}.`,
     formatRule(d.format),
-    d.toss ? `${name(d.toss.winner)} a gagné le tirage au sort et ${TOSS_FR[d.toss.choice]}.` : '[Tirage au sort à saisir]',
+    d.toss ? tossLine(name(d.toss.winner), d.toss.choice, !!d.partners) : '[Tirage au sort à saisir]',
     "Fin de l'échauffement, préparez-vous à jouer.",
   ];
   return lines;

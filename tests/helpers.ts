@@ -6,12 +6,14 @@ export class Rec {
   config: MatchConfig;
   private ts = 1_000_000;
 
-  constructor(format: FormatId = 'F1', opts: { firstServer?: Side; leftAtStart?: Side; balls?: BallChange } = {}) {
+  constructor(format: FormatId = 'F1', opts: { firstServer?: Side; leftAtStart?: Side; balls?: BallChange; serveOrder?: Record<Side, 0 | 1>; receiveOrder?: Record<Side, 0 | 1> } = {}) {
     this.config = {
       format: FORMATS[format],
       firstServer: opts.firstServer ?? 'A',
       leftAtStart: opts.leftAtStart ?? 'A',
       balls: opts.balls ?? { mode: 'none' },
+      ...(opts.serveOrder ? { serveOrder: opts.serveOrder } : {}),
+      ...(opts.receiveOrder ? { receiveOrder: opts.receiveOrder } : {}),
     };
   }
 

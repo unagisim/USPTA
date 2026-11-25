@@ -46,6 +46,13 @@ export interface MatchConfig {
   /** Joueur placé à gauche de la chaise au début du match. */
   leftAtStart: Side;
   balls: BallChange;
+  /**
+   * Double : joueur de chaque équipe qui sert en premier dans la manche (0 ou 1).
+   * Absent en simple. Modifiable à chaque manche par un événement « serve_order ».
+   */
+  serveOrder?: Record<Side, 0 | 1>;
+  /** Double : joueur de chaque équipe qui relance côté droit pendant la manche (0 ou 1). */
+  receiveOrder?: Record<Side, 0 | 1>;
 }
 
 export type Civility = 'M.' | 'Mme' | 'Mlle';
@@ -124,6 +131,14 @@ export interface EndEvent extends Base {
   note?: string;
 }
 
+/** Double : ordre de service des équipes pour la manche en cours. */
+export interface ServeOrderEvent extends Base {
+  kind: 'serve_order';
+  first: Record<Side, 0 | 1>;
+  /** Relanceur côté droit de chaque équipe ; ne change qu'en début de manche. */
+  receive?: Record<Side, 0 | 1>;
+}
+
 export interface NoteEvent extends Base {
   kind: 'note';
   text: string;
@@ -179,6 +194,7 @@ export type MatchEvent =
   | StartEvent
   | EndEvent
   | NoteEvent
+  | ServeOrderEvent
   | UndoEvent
   | ReplaceEvent
   | SetServerEvent

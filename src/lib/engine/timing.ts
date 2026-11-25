@@ -23,6 +23,7 @@ export const MAX_TOILET_BREAKS = 2;
 export const WARMUP_TWO_MINUTES = 2 * 60;
 /** Présentation du match, en secondes avant la fin de l'échauffement (50 s en double, V2). */
 export const PRESENTATION_AT = 40;
+export const PRESENTATION_AT_DOUBLES = 50;
 /** Alertes (vibration, bip) de l'échauffement, en secondes restantes. */
 export const WARMUP_CALLS = [WARMUP_TWO_MINUTES, PRESENTATION_AT, 0];
 

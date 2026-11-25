@@ -39,8 +39,12 @@ export default defineConfig({
         orientation: 'any',
         theme_color: '#0B3D2E',
         background_color: '#ffffff',
-        // Icônes à ajouter dans public/ (icon-192.png, icon-512.png).
-        icons: [],
+        // Logo de l'US Pontet Tennis (mêmes icônes qu'USPT Stats).
+        icons: [
+          { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],

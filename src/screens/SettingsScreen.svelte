@@ -1,6 +1,7 @@
 <script lang="ts">
   import { app, updateSettings } from '../lib/state.svelte';
-  import { DEFAULT_OFFENCES, type NameStyle, type Theme } from '../lib/db';
+  import { playerName } from '../lib/annonces';
+  import { DEFAULT_OFFENCES, type NameFormat, type Theme } from '../lib/db';
   import { DEFAULT_DURATIONS, type Durations } from '../lib/engine';
 
   let { onBack }: { onBack: () => void } = $props();
@@ -40,10 +41,13 @@
     ['dark', 'Sombre'],
     ['sun', 'Plein soleil'],
   ];
-  const styles: [NameStyle, string][] = [
-    ['full', 'M. Paul Dupont'],
-    ['short', 'M. Dupont'],
+  const FORMATS: [NameFormat, string][] = [
+    ['first_last', 'Prénom Nom'],
+    ['initial_last', 'P. Nom'],
+    ['last', 'Nom'],
+    ['first', 'Prénom'],
   ];
+  const example = { civility: 'M.' as const, firstName: 'Paul', lastName: 'Dupont' };
 </script>
 
 <div class="page">
@@ -61,10 +65,15 @@
     </div>
     <label for="ns">Noms à l'écran et dans la présentation du match</label>
     <div class="seg" id="ns">
-      {#each styles as [s, label] (s)}
-        <button aria-pressed={app.settings.nameStyle === s} onclick={() => updateSettings({ nameStyle: s })}>{label}</button>
+      {#each FORMATS as [f, label] (f)}
+        <button aria-pressed={app.settings.nameFormat === f} onclick={() => updateSettings({ nameFormat: f })}>{label}</button>
       {/each}
     </div>
+    <label class="check">
+      <input type="checkbox" checked={app.settings.civility} onchange={(e) => updateSettings({ civility: e.currentTarget.checked })} />
+      Civilité devant le nom (M., Mme, Mlle)
+    </label>
+    <p class="muted">Exemple : {playerName(example, { format: app.settings.nameFormat, civility: app.settings.civility })}</p>
     <p class="muted">Les annonces du score suivent l'usage FFT : « Mme Kerber », « Tsonga », ou le nom du club en match par équipes.</p>
   </div>
 

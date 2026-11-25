@@ -9,6 +9,8 @@
 
   let info = $state<MatchInfo>({ tournament: '', round: '', court: '', referee: '', umpire: '', umpireLicence: '', team: false, surface: 'clay', lineJudges: false, ballKids: false });
   let players = $state({ A: emptyPlayer(), B: emptyPlayer() });
+  let partners = $state({ A: emptyPlayer(), B: emptyPlayer() });
+  let doubles = $state(false);
   let formatId = $state<FormatId>('F2');
   let ballMode = $state<BallChange['mode']>('none');
   let error = $state('');
@@ -23,7 +25,11 @@
 
   async function create() {
     if (!players.A.lastName.trim() || !players.B.lastName.trim()) {
-      error = 'Indiquez au moins le nom des deux joueurs.';
+      error = doubles ? 'Indiquez au moins le nom des quatre joueurs.' : 'Indiquez au moins le nom des deux joueurs.';
+      return;
+    }
+    if (doubles && (!partners.A.lastName.trim() || !partners.B.lastName.trim())) {
+      error = 'Indiquez au moins le nom des quatre joueurs.';
       return;
     }
     if (info.team && (!players.A.club?.trim() || !players.B.club?.trim())) {
@@ -43,6 +49,7 @@
       updatedAt: Date.now(),
       info,
       players,
+      ...(doubles ? { doubles: true, partners, serveOrder: { A: 0, B: 0 } } : {}),
       formatId,
       balls,
       firstServer: 'A',
@@ -102,23 +109,36 @@
     </div>
   </div>
 
+  <div class="seg kind">
+    <button aria-pressed={!doubles} onclick={() => (doubles = false)}>Simple</button>
+    <button aria-pressed={doubles} onclick={() => (doubles = true)}>Double</button>
+  </div>
+
+  {#snippet playerFields(p: Player, id: string)}
+    <div class="seg">
+      <button aria-pressed={p.civility === 'M.'} onclick={() => (p.civility = 'M.')}>M.</button>
+      <button aria-pressed={p.civility === 'Mme'} onclick={() => (p.civility = 'Mme')}>Mme</button>
+      <button aria-pressed={p.civility === 'Mlle'} onclick={() => (p.civility = 'Mlle')}>Mlle</button>
+    </div>
+    <div class="grid2">
+      <div><label for="fn{id}">Prénom</label><input id="fn{id}" bind:value={p.firstName} autocapitalize="words" /></div>
+      <div><label for="ln{id}">Nom</label><input id="ln{id}" bind:value={p.lastName} autocapitalize="characters" /></div>
+    </div>
+    <div class="grid2">
+      <div><label for="cl{id}">Club</label><input id="cl{id}" bind:value={p.club} /></div>
+      <div><label for="rk{id}">Classement</label><input id="rk{id}" bind:value={p.ranking} /></div>
+    </div>
+  {/snippet}
+
   {#each ['A', 'B'] as const as side (side)}
-    {@const p = players[side]}
     <div class="card stack">
-      <h2>Joueur {side === 'A' ? 1 : 2}</h2>
-      <div class="seg">
-        <button aria-pressed={p.civility === 'M.'} onclick={() => (p.civility = 'M.')}>M.</button>
-        <button aria-pressed={p.civility === 'Mme'} onclick={() => (p.civility = 'Mme')}>Mme</button>
-        <button aria-pressed={p.civility === 'Mlle'} onclick={() => (p.civility = 'Mlle')}>Mlle</button>
-      </div>
-      <div class="grid2">
-        <div><label for="fn{side}">Prénom</label><input id="fn{side}" bind:value={p.firstName} autocapitalize="words" /></div>
-        <div><label for="ln{side}">Nom</label><input id="ln{side}" bind:value={p.lastName} autocapitalize="characters" /></div>
-      </div>
-      <div class="grid2">
-        <div><label for="cl{side}">Club</label><input id="cl{side}" bind:value={p.club} /></div>
-        <div><label for="rk{side}">Classement</label><input id="rk{side}" bind:value={p.ranking} /></div>
-      </div>
+      <h2>{doubles ? `Équipe ${side === 'A' ? 1 : 2}` : `Joueur ${side === 'A' ? 1 : 2}`}</h2>
+      {#if doubles}<h3>Premier joueur</h3>{/if}
+      {@render playerFields(players[side], side)}
+      {#if doubles}
+        <h3>Partenaire</h3>
+        {@render playerFields(partners[side], `${side}2`)}
+      {/if}
     </div>
   {/each}
 
@@ -144,6 +164,16 @@
 </div>
 
 <style>
+  .kind {
+    margin: 4px 0 12px;
+  }
+  h3 {
+    font-size: 14px;
+    margin: 6px 0 0;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
   .check {
     display: flex;
     align-items: center;

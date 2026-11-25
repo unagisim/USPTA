@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { describeEntry } from '../src/lib/describe';
 import { serveStatRows, serveStats } from '../src/lib/engine';
+import { setTimes } from '../src/lib/sheet';
 import { Rec } from './helpers';
 
 const names = { A: 'Dupont', B: 'Mme Martin' };
@@ -43,5 +44,20 @@ describe('statistiques au service', () => {
     expect(describeEntry(r.r.log[1], names)).toBe('Point Mme Martin (service Dupont, 2e balle)');
     r.add({ kind: 'serve', call: 'ace' });
     expect(describeEntry(r.r.log[2], names)).toBe('Ace Dupont (1re balle)');
+  });
+});
+
+
+describe('heures des manches', () => {
+  it('début et fin de chaque manche', () => {
+    const r = new Rec('F1');
+    r.add({ kind: 'start' });
+    r.games('A', 6).games('B', 2);
+    const t = setTimes(r.r);
+    expect(t.length).toBe(2);
+    expect(t[0].start).toBe(r.events[0].ts);
+    expect(t[0].end).toBe(r.events[24].ts); // 24e point : fin de la 1re manche
+    expect(t[1].start).toBe(r.events[25].ts);
+    expect(t[1].end).toBeNull();
   });
 });

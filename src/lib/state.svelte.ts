@@ -1,8 +1,8 @@
 // État partagé de l'application : réglages, horloge, et le match ouvert.
 
 import { DEFAULT_COLORS } from './colors';
-import { announce, playerName, type AnnounceContext } from './annonces';
-import { configOf, loadSettings, saveMatch, saveSettings, defaultSettings, type Settings, type StoredMatch } from './db';
+import { announce, playerName, type AnnounceContext, type NameStyle } from './annonces';
+import { configOf, sidePlayers, loadSettings, saveMatch, saveSettings, defaultSettings, type Settings, type StoredMatch } from './db';
 import { lastUndoable, replay, type EventInput, type MatchEvent, type Side } from './engine';
 
 export const app = $state({
@@ -33,6 +33,9 @@ function applyTheme(): void {
   else document.documentElement.setAttribute('data-theme', t);
 }
 
+/** Forme des noms à l'écran, d'après les réglages. */
+export const nameStyle = (): NameStyle => ({ format: app.settings.nameFormat, civility: app.settings.civility });
+
 /** Match ouvert : événements, score recalculé, annonces. Enregistré à chaque saisie. */
 export class LiveMatch {
   m = $state<StoredMatch>() as StoredMatch;
@@ -49,11 +52,24 @@ export class LiveMatch {
   ctx: AnnounceContext = $derived({
     config: this.config,
     players: this.m.players,
+    ...(this.m.doubles && this.m.partners ? { partners: this.m.partners } : {}),
     team: !!this.m.info.team,
   });
 
+  get doubles(): boolean {
+    return !!this.m.doubles && !!this.m.partners;
+  }
+
+  /** Nom d'un côté à l'écran : le joueur, ou « Dupont / Martin » pour une équipe de double. */
   name(side: Side): string {
-    return playerName(this.m.players[side], app.settings.nameStyle);
+    const ps = sidePlayers(this.m, side);
+    return ps.map((p) => playerName(p, nameStyle())).join(' / ');
+  }
+
+  /** Joueur d'une équipe à l'écran (double). */
+  playerOf(side: Side, idx: 0 | 1): string {
+    const p = sidePlayers(this.m, side)[idx] ?? this.m.players[side];
+    return playerName(p, nameStyle());
   }
 
   /** Annonce de la dernière saisie, à afficher en gros. */

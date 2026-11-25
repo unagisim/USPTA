@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { deleteMatch, listMatches, configOf, type StoredMatch } from '../lib/db';
+  import { deleteMatch, listMatches, configOf, sidePlayers, type StoredMatch } from '../lib/db';
+  import { matchesQuery } from '../lib/search';
   import { FORMATS, replay, setScoreFor } from '../lib/engine';
   import { pwa, applyUpdate, install } from '../lib/pwa.svelte';
 
@@ -12,10 +13,13 @@
     matches = await listMatches();
   });
 
-  const current = $derived(matches.filter((m) => m.phase !== 'finished'));
-  const done = $derived(matches.filter((m) => m.phase === 'finished'));
+  let query = $state('');
+  const found = $derived(matches.filter((m) => matchesQuery(m, query)));
+  const current = $derived(found.filter((m) => m.phase !== 'finished'));
+  const done = $derived(found.filter((m) => m.phase === 'finished'));
 
-  const who = (m: StoredMatch) => `${m.players.A.lastName} – ${m.players.B.lastName}`;
+  const side = (m: StoredMatch, s: 'A' | 'B') => sidePlayers(m, s).map((p) => p.lastName).join(' / ');
+  const who = (m: StoredMatch) => `${side(m, 'A')} – ${side(m, 'B')}`;
   function score(m: StoredMatch): string {
     const s = replay(configOf(m), m.events).state;
     const w = s.winner ?? 'A';
@@ -41,8 +45,9 @@
 </script>
 
 <div class="page">
-  <div class="topbar">
-    <h1>USPTA</h1>
+  <div class="topbar brand">
+    <img src="{import.meta.env.BASE_URL}logo.png" alt="US Pontet Tennis" width="56" height="55" />
+    <h1>USPTA<small>Assistant de l'arbitre de chaise</small></h1>
     <button class="ghost" onclick={onSettings}>Réglages</button>
   </div>
 
@@ -54,6 +59,19 @@
   {/if}
 
   <button class="primary big" onclick={onNew}>Nouveau match</button>
+
+  {#if matches.length > 1}
+    <div class="search">
+      <input
+        type="search"
+        bind:value={query}
+        placeholder="Rechercher : joueur, club, compétition, date…"
+        aria-label="Rechercher un match"
+        autocomplete="off"
+      />
+    </div>
+    {#if query && !found.length}<p class="muted">Aucun match ne correspond à « {query} ».</p>{/if}
+  {/if}
 
   {#if current.length}
     <h2>En cours</h2>
@@ -110,6 +128,31 @@
 </div>
 
 <style>
+  .brand {
+    gap: 10px;
+  }
+  .brand img {
+    flex: none;
+    border-radius: 10px;
+    background: #fff;
+  }
+  .brand h1 {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+  }
+  .brand small {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+  }
+  .search {
+    margin: -8px 0 12px;
+  }
+  .search input {
+    width: 100%;
+  }
   .big {
     width: 100%;
     min-height: 64px;

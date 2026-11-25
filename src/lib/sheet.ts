@@ -1,8 +1,8 @@
 // Contenu de la feuille de match, commun à l'écran et à l'export PDF.
 
-import type { StoredMatch, TossChoice } from './db';
+import { sidePlayers, type StoredMatch, type TossChoice } from './db';
 import { describeEntry, describeRaw, describeTimer, scoreBefore } from './describe';
-import { setScoreFor, type LogEntry, type MatchEvent, type ReplayResult, type Side } from './engine';
+import { serveStatRows, serveStats, serveStatsByPlayer, setScoreFor, type LogEntry, type MatchEvent, type ReplayResult, type Side } from './engine';
 
 export interface SheetRow {
   id: number;
@@ -42,6 +42,9 @@ export function resultText(r: ReplayResult, names: Record<Side, string>): string
 
 export function sheetRows(m: StoredMatch, r: ReplayResult, names: Record<Side, string>): SheetRow[] {
   const byId = new Map<number, LogEntry>(r.log.map((e) => [e.event.id, e]));
+  const servers = m.doubles
+    ? { A: sidePlayers(m, 'A').map((p) => `${p.civility} ${p.lastName}`), B: sidePlayers(m, 'B').map((p) => `${p.civility} ${p.lastName}`) }
+    : undefined;
   const voided = new Set(m.events.filter((e) => e.kind === 'undo').map((e) => (e as Extract<MatchEvent, { kind: 'undo' }>).target));
 
   return m.events.map((e): SheetRow => {
@@ -61,8 +64,17 @@ export function sheetRows(m: StoredMatch, r: ReplayResult, names: Record<Side, s
         return { ...base, kind: 'other', text: 'Début du match' };
       case 'note':
         return { ...base, kind: 'other', text: `Note : ${e.text}` };
+      case 'serve_order': {
+        const first = (['A', 'B'] as const).map((s) => servers?.[s][e.first[s]] ?? names[s]).join(' et ');
+        const rcv = e.receive ? (['A', 'B'] as const).map((s) => servers?.[s][e.receive![s]] ?? names[s]).join(' et ') : '';
+        return {
+          ...base,
+          kind: 'other',
+          text: `Positions de la manche : ${first} servent en premier${rcv ? ` ; ${rcv} relancent côté droit` : ''}`,
+        };
+      }
       default: {
-        const text = entry ? describeEntry(entry, names) : describeRaw(e, names);
+        const text = entry ? describeEntry(entry, names, servers) : describeRaw(e, names);
         const sanction = entry?.outcome.sanction;
         const extra = sanction ? ` : ${sanctionText(sanction.level)}` : '';
         const note = 'note' in e && e.note ? ` (${e.note})` : '';
@@ -79,4 +91,50 @@ export function sheetRows(m: StoredMatch, r: ReplayResult, names: Record<Side, s
       }
     }
   });
+}
+
+/** Tableau de statistiques au service : une colonne par joueur (ou par équipe). */
+export interface StatTable {
+  cols: { label: string; side: Side }[];
+  rows: string[][];
+}
+
+/**
+ * Statistiques au service, pour l'écran et le PDF. En double, `byPlayer` donne un tableau
+ * par équipe avec ses deux joueurs ; sinon un seul tableau, une colonne par côté.
+ */
+export function statTables(m: StoredMatch, log: readonly LogEntry[], set: number | undefined, byPlayer: boolean): StatTable[] {
+  const sides = ['A', 'B'] as const;
+  if (byPlayer && m.doubles) {
+    const st = serveStatsByPlayer(log, set);
+    return sides.map((s) => ({
+      cols: sidePlayers(m, s).map((p) => ({ label: p.lastName, side: s })),
+      rows: serveStatRows([st[`${s}0`], st[`${s}1`]]),
+    }));
+  }
+  const label = (s: Side) => sidePlayers(m, s).map((p) => p.lastName).join(' / ');
+  return [{ cols: sides.map((s) => ({ label: label(s), side: s })), rows: serveStatRows(serveStats(log, set)) }];
+}
+
+export interface SetTime {
+  set: number;
+  start: number | null;
+  end: number | null;
+}
+
+/**
+ * Heures de chaque manche. Début : le lancement du match pour la 1re manche, sinon la première
+ * saisie de jeu de la manche (fin du premier échange, à quelques secondes près). Fin : le point
+ * qui termine la manche, ou la fin anticipée du match.
+ */
+export function setTimes(r: ReplayResult): SetTime[] {
+  const out: SetTime[] = [];
+  for (const e of r.log) {
+    const n = e.before.completedSets.length + 1;
+    const played = e.outcome.pointWinner !== undefined || e.outcome.serveCall !== undefined || e.outcome.gameWinner !== undefined;
+    if (!out[n - 1] && (played || e.after.winner)) out[n - 1] = { set: n, start: n === 1 ? (r.start ?? e.event.ts) : e.event.ts, end: null };
+    const cur = out[n - 1];
+    if (cur && (e.outcome.setWinner || (e.after.winner && !e.before.winner))) cur.end = e.event.ts;
+  }
+  return out.filter(Boolean);
 }

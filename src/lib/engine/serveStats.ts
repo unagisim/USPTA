@@ -34,14 +34,26 @@ export function servedPoint(entry: LogEntry): { server: Side; winner: Side; ball
   return null;
 }
 
+/** Clé d'un joueur : côté et rang dans l'équipe (« A0 », « B1 »). En simple, toujours 0. */
+export type PlayerKey = `${Side}${0 | 1}`;
+
 export function serveStats(log: readonly LogEntry[], set?: number): Record<Side, ServeStats> {
-  const st = { A: empty(), B: empty() };
+  return tally(log, set, (e) => e.before.server) as Record<Side, ServeStats>;
+}
+
+/** Double : statistiques de chaque joueur au service. */
+export function serveStatsByPlayer(log: readonly LogEntry[], set?: number): Record<PlayerKey, ServeStats> {
+  return tally(log, set, (e) => `${e.before.server}${e.serverIndex}` as PlayerKey) as Record<PlayerKey, ServeStats>;
+}
+
+function tally(log: readonly LogEntry[], set: number | undefined, key: (e: LogEntry) => string): Record<string, ServeStats> {
+  const st: Record<string, ServeStats> = { A: empty(), B: empty(), A0: empty(), A1: empty(), B0: empty(), B1: empty() };
   for (const entry of log) {
     if (set !== undefined && entry.before.completedSets.length + 1 !== set) continue;
-    if (entry.event.kind === 'serve' && entry.event.call === 'net') st[entry.before.server].nets++;
+    if (entry.event.kind === 'serve' && entry.event.call === 'net') st[key(entry)].nets++;
     const p = servedPoint(entry);
     if (!p) continue;
-    const s = st[p.server];
+    const s = st[key(entry)];
     const won = p.winner === p.server;
     s.points++;
     if (p.ace) s.aces++;
@@ -62,9 +74,10 @@ export function ratio(n: number, total: number): string {
   return total ? `${n}/${total} (${Math.round((100 * n) / total)} %)` : '–';
 }
 
-/** Lignes d'affichage, communes à l'écran et au PDF. */
-export function serveStatRows(st: Record<Side, ServeStats>): [string, string, string][] {
-  const row = (label: string, f: (s: ServeStats) => string): [string, string, string] => [label, f(st.A), f(st.B)];
+/** Lignes d'affichage, communes à l'écran et au PDF : un libellé puis une valeur par colonne. */
+export function serveStatRows(st: Record<Side, ServeStats> | ServeStats[]): string[][] {
+  const cols = Array.isArray(st) ? st : [st.A, st.B];
+  const row = (label: string, f: (s: ServeStats) => string): string[] => [label, ...cols.map(f)];
   return [
     row('Points au service', (s) => String(s.points)),
     row('1res balles dans le court', (s) => ratio(s.firstIn, s.points)),
