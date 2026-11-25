@@ -122,7 +122,10 @@
   }
 </script>
 
+<!-- Deux colonnes : en portrait elles s'effacent (display: contents) et tout s'empile ;
+     en paysage, score et annonces à gauche, saisie à droite. -->
 <div class="screen">
+  <div class="col col-a">
   <header>
     <button class="ghost" onclick={onExit} aria-label="Accueil">←</button>
     <span class="info">{live.m.info.court ? `Court ${live.m.info.court}` : live.m.info.tournament}</span>
@@ -171,6 +174,16 @@
     {/if}
   </div>
 
+  <nav>
+    <button onclick={undo}>Annuler</button>
+    <button onclick={() => (panel = 'sanction')} disabled={over}>Sanction</button>
+    <button onclick={() => (panel = 'time')} disabled={over}>Temps</button>
+    <button onclick={() => (panel = 'correct')}>Corriger</button>
+    <button onclick={() => (panel = 'end')} disabled={over}>Fin</button>
+  </nav>
+  </div>
+
+  <div class="col col-b">
   {#if over}
     <div class="done">
       <button class="primary" onclick={onSheet}>Voir la feuille de match</button>
@@ -234,14 +247,7 @@
       Let pendant l'échange · point rejoué{second ? ' en 1er service' : ''}
     </button>
   {/if}
-
-  <nav>
-    <button onclick={undo}>Annuler</button>
-    <button onclick={() => (panel = 'sanction')} disabled={over}>Sanction</button>
-    <button onclick={() => (panel = 'time')} disabled={over}>Temps</button>
-    <button onclick={() => (panel = 'correct')}>Corriger</button>
-    <button onclick={() => (panel = 'end')} disabled={over}>Fin</button>
-  </nav>
+  </div>
 </div>
 
 {#if panel === 'sanction'}
@@ -451,5 +457,92 @@
   nav button {
     padding: 0 2px;
     font-size: 14px;
+  }
+
+  /* Portrait : les colonnes s'effacent, la barre d'actions reste en bas. */
+  .col {
+    display: contents;
+  }
+  nav {
+    order: 1;
+  }
+
+  /* Paysage (téléphone couché) : deux colonnes sur toute la largeur, sans défilement. */
+  @media (orientation: landscape) and (max-height: 600px) {
+    .screen {
+      max-width: none;
+      flex-direction: row;
+      gap: 12px;
+      height: 100dvh;
+      min-height: 0;
+      padding: 6px calc(10px + env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom))
+        calc(10px + env(safe-area-inset-left));
+    }
+    .col {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1 1 0;
+      min-width: 0;
+      overflow-y: auto;
+    }
+    .col-b {
+      flex-grow: 1.15;
+    }
+    /* Toujours visible, même si une annonce longue fait défiler la colonne. */
+    nav {
+      margin-top: auto;
+      position: sticky;
+      bottom: 0;
+      background: var(--bg);
+      padding-top: 4px;
+    }
+    nav button,
+    header button {
+      min-height: 40px;
+    }
+    .call {
+      min-height: 48px;
+      padding: 6px 10px;
+    }
+    .call p {
+      font-size: 19px;
+    }
+    .points {
+      min-height: 90px;
+    }
+    .points button {
+      font-size: 18px;
+    }
+    .let {
+      min-height: 36px;
+    }
+    .serve-row button {
+      min-height: 46px;
+    }
+  }
+  /* Petits téléphones couchés (hauteur ≤ 340 px) : on resserre encore. */
+  @media (orientation: landscape) and (max-height: 340px) {
+    .col {
+      gap: 4px;
+    }
+    header button,
+    nav button {
+      min-height: 34px;
+    }
+    .call {
+      min-height: 40px;
+      padding: 4px 8px;
+    }
+    .call p {
+      font-size: 16px;
+    }
+    .hints span {
+      padding: 2px 10px;
+      font-size: 13px;
+    }
+    .elapsed {
+      padding: 0 12px;
+    }
   }
 </style>
