@@ -23,7 +23,20 @@ export interface MatchInfo {
   umpireLicence: string;
   /** Match par équipes : le score s'annonce avec le nom du club. */
   team?: boolean;
+  /** Surface du court : la terre battue a sa procédure (marques de balle). */
+  surface?: Surface;
+  lineJudges?: boolean;
+  ballKids?: boolean;
 }
+
+export type Surface = 'clay' | 'hard' | 'synthetic' | 'carpet' | 'grass';
+export const SURFACES: [Surface, string][] = [
+  ['clay', 'Terre battue'],
+  ['hard', 'Surface dure'],
+  ['synthetic', 'Gazon synthétique'],
+  ['carpet', 'Moquette'],
+  ['grass', 'Gazon'],
+];
 
 import type { TossChoice } from './annonces/presentation';
 export type { TossChoice };

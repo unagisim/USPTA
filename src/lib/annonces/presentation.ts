@@ -16,6 +16,8 @@ export interface PresentationData {
   format: MatchFormat;
   toss: { winner: Side; choice: TossChoice } | null;
   nameStyle?: 'full' | 'short';
+  /** Match par équipes : chaque joueur est présenté avec son club. */
+  team?: boolean;
 }
 
 const TOSS_FR: Record<TossChoice, string> = {
@@ -48,8 +50,12 @@ export function presentation(d: PresentationData): string[] {
   const name = (s: Side) => playerName(d.players[s], d.nameStyle);
   const intro = [d.round.trim(), d.competition.trim()].filter(Boolean).join(', ');
   const right = other(d.left);
+  const named = (s: Side) => {
+    const club = d.players[s].club?.trim();
+    return d.team && club ? `${name(s)}, ${club}` : name(s);
+  };
   const lines = [
-    `${intro || 'Match'}, opposant à droite de la chaise ${name(right)}, à gauche de la chaise ${name(d.left)}.`,
+    `${intro || 'Match'}, opposant à droite de la chaise ${named(right)}, à gauche de la chaise ${named(d.left)}.`,
     formatRule(d.format),
     d.toss ? `${name(d.toss.winner)} a gagné le tirage au sort et ${TOSS_FR[d.toss.choice]}.` : '[Tirage au sort à saisir]',
     "Fin de l'échauffement, préparez-vous à jouer.",

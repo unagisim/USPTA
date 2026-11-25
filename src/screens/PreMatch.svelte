@@ -1,7 +1,7 @@
 <script lang="ts">
   import Countdown from '../components/Countdown.svelte';
   import type { TossChoice } from '../lib/db';
-  import { ballsRule, playCall, presentation, TWO_MINUTES } from '../lib/annonces';
+  import { ballsRule, presentation, TWO_MINUTES } from '../lib/annonces';
   import { clock } from '../lib/device';
   import { FORMATS, other, PRESENTATION_AT, WARMUP_CALLS, WARMUP_TWO_MINUTES, type Side } from '../lib/engine';
   import { app, type LiveMatch } from '../lib/state.svelte';
@@ -27,22 +27,29 @@
     "Se placer au centre du court, face à la chaise d'arbitre",
     'Donner les balles aux joueurs',
   ];
-  const topics = $derived.by((): [string, string][] => {
+  // Points à évoquer, rédigés d'après ce qui a été saisi à la création du match.
+  const topics = $derived.by((): string[] => {
     const f = format;
-    const tb = [
-      `à ${f.tiebreakAt} jeux partout${f.finalSetSuperTiebreak ? ' dans les deux premières manches' : ' dans toutes les manches'}`,
-      f.finalSetSuperTiebreak ? `super jeu décisif à ${f.superTiebreakPoints} points en 3e manche` : '',
-      f.decidingPoint ? 'point décisif à égalité' : '',
-    ].filter(Boolean);
+    const i = m.info;
+    const officials =
+      i.lineJudges && i.ballKids
+        ? 'Juges de ligne et ramasseurs de balles présents'
+        : i.lineJudges
+          ? 'Juges de ligne présents, pas de ramasseurs de balles'
+          : i.ballKids
+            ? 'Ramasseurs de balles présents, pas de juges de ligne'
+            : 'Ni juges de ligne ni ramasseurs de balles';
     return [
-      ['Nombre de manches', `au meilleur des 3 manches${f.gamesPerSet === 6 ? '' : ` de ${f.gamesPerSet} jeux`}`],
-      ['Application du jeu décisif', tb.join(' ; ')],
-      ['Nombre et changements de balles', ballsRule(m.balls)],
-      ['Procédure sur terre battue', 'si le court est en terre battue'],
-      ['Présence de juges de ligne et de ramasseurs de balles', ''],
-      [`${warmupMin} minutes d'échauffement`, ''],
-      ['Questions ?', ''],
-    ];
+      `Partie au meilleur des 3 manches${f.gamesPerSet === 6 ? '' : ` de ${f.gamesPerSet} jeux`}`,
+      `Jeu décisif à ${f.tiebreakAt} jeux partout ${f.finalSetSuperTiebreak ? 'dans les deux premières manches' : 'dans toutes les manches'}`,
+      f.finalSetSuperTiebreak ? `Troisième manche en super jeu décisif à ${f.superTiebreakPoints} points` : '',
+      f.decidingPoint ? 'Point décisif à égalité, choix au relanceur' : '',
+      ballsRule(m.balls),
+      i.surface === 'clay' ? 'Procédure sur terre battue : vérification des marques de balle' : '',
+      officials,
+      `${warmupMin} minutes d'échauffement`,
+      'Questions ?',
+    ].filter(Boolean);
   });
 
   const CHOICES: [TossChoice, string][] = [
@@ -88,9 +95,9 @@
       format,
       toss: m.toss,
       nameStyle: app.settings.nameStyle,
+      team: !!m.info.team,
     }),
   );
-  const firstCall = $derived(playCall(m.players[m.firstServer], !!m.info.team));
 
   async function startWarmup() {
     await live.add({ kind: 'timer', timer: 'warmup', action: 'start' });
@@ -133,20 +140,12 @@
       <li>
         Évoquer :
         <ul>
-          {#each topics as [topic, detail] (topic)}
-            <li>{topic}{#if detail}<span class="muted"> : {detail}</span>{/if}</li>
-          {/each}
+          {#each topics as topic (topic)}<li>{topic}</li>{/each}
         </ul>
       </li>
       <li>Effectuer le tirage au sort</li>
       <li>Désigner clairement le gagnant du tirage</li>
-    </ol>
-    <h3>Sur la chaise</h3>
-    <ol start={COURT.length + MEETING_BEFORE.length + 4}>
-      <li>Lancer l'échauffement</li>
-      <li>Saisir le tirage au sort et la place des joueurs</li>
-      <li>Annoncer « {TWO_MINUTES} » à 2:00</li>
-      <li>Présenter le match à 0:{String(PRESENTATION_AT).padStart(2, '0')}</li>
+      <li>Monter sur la chaise et lancer l'échauffement</li>
     </ol>
   </details>
 
@@ -229,7 +228,6 @@
   </div>
 
   <button class="primary wide" onclick={startMatch}>Début du match</button>
-  <p class="muted center">Puis, avant le premier service : « {firstCall} »</p>
 </div>
 
 <style>
@@ -298,8 +296,5 @@
     width: 100%;
     min-height: 64px;
     font-size: 18px;
-  }
-  .center {
-    text-align: center;
   }
 </style>

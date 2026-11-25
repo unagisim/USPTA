@@ -32,6 +32,17 @@ describe("annonces d'avant-match", () => {
     expect(lines[2]).toBe('[Tirage au sort à saisir]');
   });
 
+  it('match par équipes : clubs dans la présentation', () => {
+    const withClubs = {
+      A: { ...players.A, club: 'TC Blagnac' },
+      B: { ...players.B, club: 'ASPTT Toulouse' },
+    };
+    const lines = presentation({ competition: 'championnat National 3', round: '2e journée', players: withClubs, left: 'A', format: FORMATS.F1, toss: null, team: true });
+    expect(lines[0]).toBe(
+      '2e journée, championnat National 3, opposant à droite de la chaise Mme Julie Martin, ASPTT Toulouse, à gauche de la chaise M. Paul Dupont, TC Blagnac.',
+    );
+  });
+
   it('règles des formats courts', () => {
     expect(formatRule(FORMATS.F6)).toBe(
       'Partie au meilleur des 3 manches de 4 jeux, avec jeu décisif à 3 jeux partout dans les deux premières manches, la troisième manche se joue en super jeu décisif à 10 points, point décisif à égalité.',

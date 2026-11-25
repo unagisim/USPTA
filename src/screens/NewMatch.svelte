@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { saveMatch, uid, type MatchInfo } from '../lib/db';
+  import { saveMatch, SURFACES, uid, type MatchInfo } from '../lib/db';
   import { FORMAT_LIST, type BallChange, type FormatId, type Player } from '../lib/engine';
 
   let { onCancel, onCreated }: { onCancel: () => void; onCreated: (id: string) => void } = $props();
 
   const emptyPlayer = (): Player => ({ civility: 'M.', firstName: '', lastName: '', club: '', ranking: '' });
 
-  let info = $state<MatchInfo>({ tournament: '', round: '', court: '', referee: '', umpire: '', umpireLicence: '', team: false });
+  let info = $state<MatchInfo>({ tournament: '', round: '', court: '', referee: '', umpire: '', umpireLicence: '', team: false, surface: 'clay', lineJudges: false, ballKids: false });
   let players = $state({ A: emptyPlayer(), B: emptyPlayer() });
   let formatId = $state<FormatId>('F2');
   let ballMode = $state<BallChange['mode']>('none');
@@ -85,6 +85,14 @@
       <input type="checkbox" bind:checked={info.team} />
       Match par équipes : le score s'annonce avec le nom du club
     </label>
+    <div>
+      <label for="sf">Surface</label>
+      <select id="sf" bind:value={info.surface}>
+        {#each SURFACES as [v, l] (v)}<option value={v}>{l}</option>{/each}
+      </select>
+    </div>
+    <label class="check"><input type="checkbox" bind:checked={info.lineJudges} /> Juges de ligne présents</label>
+    <label class="check"><input type="checkbox" bind:checked={info.ballKids} /> Ramasseurs de balles présents</label>
     <div><label for="ja">Juge-arbitre</label><input id="ja" bind:value={info.referee} /></div>
     <div class="grid2">
       <div><label for="u">Arbitre</label><input id="u" bind:value={info.umpire} /></div>
