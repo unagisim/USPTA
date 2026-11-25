@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { describeEntry, describeRaw, describeTimer, scoreBefore } from '../lib/describe';
+  import FileReady from '../components/FileReady.svelte';
   import { clock, hour } from '../lib/device';
-  import { FORMATS, setScoreFor, type LogEntry, type MatchEvent } from '../lib/engine';
+  import { FORMATS, serveStatRows, serveStats } from '../lib/engine';
+  import { resultText, sheetRows } from '../lib/sheet';
   import type { LiveMatch } from '../lib/state.svelte';
 
   // Feuille de match à l'écran : en-tête, résultat, chronologie complète avec les corrections.
@@ -10,64 +11,35 @@
   const m = $derived(live.m);
   const r = $derived(live.result);
   const names = $derived({ A: live.name('A'), B: live.name('B') });
-  const byId = $derived(new Map<number, LogEntry>(r.log.map((e) => [e.event.id, e])));
-  const voided = $derived(new Set(m.events.filter((e) => e.kind === 'undo').map((e) => (e as Extract<MatchEvent, { kind: 'undo' }>).target)));
+  const result = $derived(resultText(r, names));
+  const rows = $derived(sheetRows(m, r, names));
 
-  const REASONS = { retirement: 'abandon', disqualification: 'disqualification', walkover: 'forfait', completed: '' };
-  const result = $derived.by(() => {
-    const s = r.state;
-    if (!s.winner) return null;
-    const sets = s.completedSets.map((set) => setScoreFor(set, s.winner!)).join(' ');
-    const how = s.endReason && s.endReason !== 'completed' ? ` (${REASONS[s.endReason]})` : '';
-    return `${names[s.winner]} gagne ${sets}${how}`;
-  });
-
-  interface Row {
-    id: number;
-    ts: number;
-    score: string;
-    text: string;
-    kind: 'play' | 'sanction' | 'time' | 'correction' | 'other';
-    struck: boolean;
-  }
-
-  const rows = $derived.by((): Row[] =>
-    m.events.map((e): Row => {
-      const entry = byId.get(e.id);
-      const base = { id: e.id, ts: e.ts, score: entry ? scoreBefore(entry) : '', struck: voided.has(e.id) };
-      switch (e.kind) {
-        case 'undo':
-          return { ...base, kind: 'correction', text: `Correction : saisie n° ${e.target} annulée${e.reason ? ` (${e.reason})` : ''}` };
-        case 'replace': {
-          const w = e.with;
-          const what = w.kind === 'point' ? `point à ${names[w.winner]}` : w.kind === 'let' ? 'point à rejouer' : w.call;
-          return { ...base, kind: 'correction', text: `Correction : saisie n° ${e.target} → ${what}${e.reason ? ` (${e.reason})` : ''}` };
-        }
-        case 'timer':
-          return { ...base, kind: 'time', text: describeTimer(e, names) };
-        case 'start':
-          return { ...base, kind: 'other', text: 'Début du match' };
-        case 'note':
-          return { ...base, kind: 'other', text: `Note : ${e.text}` };
-        default: {
-          const text = entry ? describeEntry(entry, names) : describeRaw(e, names);
-          const sanction = entry?.outcome.sanction;
-          const extra = sanction ? ` → ${sanctionText(sanction.level)}` : '';
-          const note = 'note' in e && e.note ? ` (${e.note})` : '';
-          const reason = 'reason' in e && e.reason ? ` (${e.reason})` : '';
-          const kind = e.kind === 'conduct' || e.kind === 'time_violation' ? 'sanction' : e.kind === 'set_server' || e.kind === 'adjust' ? 'correction' : 'play';
-          return { ...base, kind, text: `${text}${extra}${note}${reason}${entry?.replaced ? ' (corrigé)' : ''}` };
-        }
-      }
-    }),
-  );
-
-  function sanctionText(level: string): string {
-    return { warning: 'avertissement', point: '1 point de pénalité', three_points: '3 points de pénalité', disqualification: 'appel du juge-arbitre' }[level] ?? level;
-  }
+  // Statistiques au service : match entier ou une manche.
+  let statSet = $state<number | undefined>(undefined);
+  const setCount = $derived(r.state.completedSets.length + (r.state.winner ? 0 : 1));
+  const statRows = $derived(serveStatRows(serveStats(r.log, statSet)));
 
   let filter = $state<'all' | 'key'>('key');
   const shown = $derived(filter === 'all' ? rows : rows.filter((x) => x.kind !== 'play'));
+
+  // Export PDF : préparation, puis un tap dédié pour partager (exigé par Android).
+  let pdf = $state<File | null>(null);
+  let exporting = $state(false);
+  let exportError = $state('');
+  async function exportPdf() {
+    exporting = true;
+    exportError = '';
+    try {
+      const { buildSheetPdf } = await import('../lib/export/pdf');
+      const { blob, fileName } = buildSheetPdf(m, r, names);
+      pdf = new File([blob], fileName, { type: 'application/pdf' });
+    } catch (e) {
+      console.error(e);
+      exportError = "La création du PDF a échoué.";
+    } finally {
+      exporting = false;
+    }
+  }
 </script>
 
 <div class="page">
@@ -99,9 +71,39 @@
     </p>
   </div>
 
+  <div class="card">
+    <h2>Statistiques au service</h2>
+    {#if setCount > 1}
+      <div class="seg sets">
+        <button aria-pressed={statSet === undefined} onclick={() => (statSet = undefined)}>Match</button>
+        {#each Array.from({ length: setCount }, (_, k) => k + 1) as k (k)}
+          <button aria-pressed={statSet === k} onclick={() => (statSet = k)}>Manche {k}</button>
+        {/each}
+      </div>
+    {/if}
+    <table class="stats">
+      <thead>
+        <tr><th></th><th class="pa">{m.players.A.lastName}</th><th class="pb">{m.players.B.lastName}</th></tr>
+      </thead>
+      <tbody>
+        {#each statRows as [label, a, b] (label)}
+          <tr><th scope="row">{label}</th><td>{a}</td><td>{b}</td></tr>
+        {/each}
+      </tbody>
+    </table>
+  </div>
+
+  <button class="primary wide" onclick={exportPdf} disabled={exporting}>
+    {exporting ? 'Création du PDF…' : 'Exporter la feuille en PDF'}
+  </button>
+  {#if exportError}<p class="error" role="alert">{exportError}</p>{/if}
+  {#if pdf}
+    <FileReady file={pdf} title="Feuille de match" onClose={() => (pdf = null)} />
+  {/if}
+
   <div class="seg">
     <button aria-pressed={filter === 'key'} onclick={() => (filter = 'key')}>Incidents</button>
-    <button aria-pressed={filter === 'all'} onclick={() => (filter = 'all')}>Tous les points</button>
+    <button aria-pressed={filter === 'all'} onclick={() => (filter = 'all')}>Déroulé point par point</button>
   </div>
 
   <ol class="log">
@@ -118,6 +120,37 @@
 </div>
 
 <style>
+  .sets {
+    margin: 8px 0;
+  }
+  .stats {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+  }
+  .stats th,
+  .stats td {
+    padding: 5px 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .stats tbody th {
+    text-align: left;
+    font-weight: 500;
+    color: var(--muted);
+  }
+  .stats td,
+  .stats thead th {
+    text-align: right;
+    white-space: nowrap;
+  }
+  .wide {
+    width: 100%;
+    margin-bottom: 12px;
+  }
+  .error {
+    color: var(--danger);
+  }
   .card p {
     margin: 4px 0;
   }

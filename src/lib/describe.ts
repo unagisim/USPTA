@@ -6,12 +6,12 @@ export function describeEntry(entry: LogEntry, names: Record<Side, string>): str
   const { event: e, before, outcome: o } = entry;
   switch (e.kind) {
     case 'serve':
-      if (e.call === 'ace') return `Ace ${names[before.server]}`;
+      if (e.call === 'ace') return `Ace ${names[before.server]} (${ball(before.serveNumber)})`;
       if (e.call === 'net') return `Filet, ${before.serveNumber === 1 ? '1re' : '2e'} balle`;
       if (o.serveCall === 'double_fault') return `Double faute ${names[before.server]}${e.call === 'net_fault' ? ' (filet)' : ''}`;
       return e.call === 'net_fault' ? 'Filet, faute (1re balle)' : 'Faute (1re balle)';
     case 'point':
-      return `Point ${names[e.winner]}`;
+      return `Point ${names[e.winner]} (service ${names[before.server]}, ${ball(before.serveNumber)})`;
     case 'let':
       return 'Let, point à rejouer';
     case 'conduct':
@@ -28,6 +28,8 @@ export function describeEntry(entry: LogEntry, names: Record<Side, string>): str
       return e.kind;
   }
 }
+
+const ball = (n: 1 | 2) => (n === 1 ? '1re balle' : '2e balle');
 
 /** Description d'un événement annulé (absent du journal rejoué). */
 export function describeRaw(e: MatchEvent, names: Record<Side, string>): string {
