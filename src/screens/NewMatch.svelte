@@ -115,7 +115,7 @@
       <select id="balls" bind:value={ballMode}>
         <option value="none">Pas de changement</option>
         <option value="regulation">Changements réglementaires (7 puis 9 jeux)</option>
-        <option value="final_set">Pour le 3e set</option>
+        <option value="final_set">Pour la 3e manche</option>
       </select>
     </div>
   </div>

@@ -10,7 +10,7 @@
   const durationLabels: Record<keyof Durations, string> = {
     warmup: 'Échauffement',
     changeover: 'Changement de côté',
-    setBreak: 'Fin de set',
+    setBreak: 'Fin de manche',
     medical: 'Temps mort médical',
     toilet: 'Pause toilettes ou tenue',
   };

@@ -32,9 +32,9 @@ describe('annonces du score', () => {
 
   it('fin de jeu', () => {
     const r = new Rec('F1').games('A');
-    expect(say(r)).toEqual(['Jeu M. Paul Dupont.', 'M. Paul Dupont mène 1 jeu à 0, premier set']);
+    expect(say(r)).toEqual(['Jeu M. Paul Dupont.', 'M. Paul Dupont mène 1 jeu à 0, première manche']);
     r.games('B');
-    expect(say(r)).toEqual(['Jeu Mme Julie Martin.', '1 jeu partout, premier set']);
+    expect(say(r)).toEqual(['Jeu Mme Julie Martin.', '1 jeu partout, première manche']);
   });
 
   it('entrée dans le jeu décisif et score du jeu décisif', () => {
@@ -48,11 +48,11 @@ describe('annonces du score', () => {
 
   it('fin de set, super jeu décisif et fin de match', () => {
     const r = new Rec('F2').alternate(8).games('A', 2);
-    expect(say(r)).toEqual(['Jeu et premier set M. Paul Dupont, 6 jeux à 4']);
+    expect(say(r)).toEqual(['Jeu et première manche M. Paul Dupont, 6 jeux à 4']);
     r.alternate(6, 'A').games('B', 3); // 3-6
-    expect(say(r)).toEqual(['Jeu et deuxième set Mme Julie Martin, 6 jeux à 3', 'Un set partout, super jeu décisif']);
+    expect(say(r)).toEqual(['Jeu et deuxième manche Mme Julie Martin, 6 jeux à 3', 'Une manche partout, super jeu décisif']);
     r.point('A', 7).point('B', 7).point('A', 3); // 10-7
-    expect(say(r)).toEqual(['Jeu, set et match M. Paul Dupont, 6-4 3-6 10-7']);
+    expect(say(r)).toEqual(['Jeu, manche et match M. Paul Dupont, 6-4 3-6 10-7']);
   });
 });
 

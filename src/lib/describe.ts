@@ -53,13 +53,13 @@ export function describeRaw(e: MatchEvent, names: Record<Side, string>): string 
   }
 }
 
-/** Score avant une saisie : « 1er set, 3-2, 30-15 ». */
+/** Score avant une saisie : « Manche 1 · 3-2 · 30-15 ». */
 export function scoreBefore(entry: LogEntry): string {
   const b = entry.before;
   const pts = formatPoints(b);
   const set = b.completedSets.length + 1;
   const games = b.isSuperTiebreakSet ? 'super jeu décisif' : `${b.games.A}-${b.games.B}`;
-  return `Set ${set} · ${games} · ${pts.A}-${pts.B}`;
+  return `Manche ${set} · ${games} · ${pts.A}-${pts.B}`;
 }
 
 const TIMERS = { warmup: 'Échauffement', medical: 'Temps mort médical', toilet: 'Pause toilettes', interruption: 'Interruption' };

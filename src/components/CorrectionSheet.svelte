@@ -58,7 +58,7 @@
     for (const part of setsText.trim().split(/\s+/).filter(Boolean)) {
       const m = /^(\d+)-(\d+)$/.exec(part);
       if (!m) {
-        adjustError = `Set illisible : « ${part} ». Écrivez par exemple 6-4 3-6.`;
+        adjustError = `Manche illisible : « ${part} ». Écrivez par exemple 6-4 3-6.`;
         return;
       }
       sets.push({ A: Number(m[1]), B: Number(m[2]) });
@@ -104,7 +104,7 @@
   {:else}
     <h3>Fixer le score</h3>
     <p class="muted">Ordre : {names.A}, puis {names.B}.</p>
-    <label for="sets">Sets terminés</label>
+    <label for="sets">Manches terminées</label>
     <input id="sets" bind:value={setsText} placeholder="6-4 3-6" />
     <div class="grid2">
       <div><label for="ga">Jeux {names.A}</label><input id="ga" type="number" min="0" bind:value={games.A} /></div>

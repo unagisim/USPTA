@@ -16,9 +16,9 @@
   <thead>
     <tr>
       <th class="who"></th>
-      {#each score.completedSets as _, k (k)}<th>S{k + 1}</th>{/each}
+      {#each score.completedSets as _, k (k)}<th>M{k + 1}</th>{/each}
       {#if live}
-        {#if !score.isSuperTiebreakSet}<th class="cur">S{setNo}</th>{/if}
+        {#if !score.isSuperTiebreakSet}<th class="cur">M{setNo}</th>{/if}
         <th class="pts">{ptsLabel}</th>
       {/if}
     </tr>

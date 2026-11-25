@@ -32,7 +32,7 @@
       </button>
     {/each}
   </div>
-  <p class="muted">2 pauses par joueur et par match, échauffement compris, de préférence en fin de set.</p>
+  <p class="muted">2 pauses par joueur et par match, échauffement compris, de préférence en fin de manche.</p>
 
   <h3>Interruption</h3>
   <button onclick={() => start('interruption')}>Interrompre le match (pluie, nuit…)</button>

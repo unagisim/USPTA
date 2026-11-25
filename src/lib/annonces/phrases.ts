@@ -38,7 +38,7 @@ export interface Phrases {
   time: string;
 }
 
-const ORDINALS = ['premier', 'deuxième', 'troisième', 'quatrième', 'cinquième'];
+const ORDINALS = ['première', 'deuxième', 'troisième', 'quatrième', 'cinquième'];
 const jeux = (n: number) => (n > 1 ? 'jeux' : 'jeu');
 
 const CONDUCT_FR: Record<ConductLevel, string> = {
@@ -58,12 +58,12 @@ export const fr: Phrases = {
   tiebreakAll: (n) => `${n} partout`,
 
   game: (n) => `Jeu ${n}.`,
-  gamesLead: (n, hi, lo, o) => `${n} mène ${hi} ${jeux(hi)} à ${lo}, ${o} set`,
-  gamesAll: (n, o) => `${n} ${jeux(n)} partout, ${o} set`,
+  gamesLead: (n, hi, lo, o) => `${n} mène ${hi} ${jeux(hi)} à ${lo}, ${o} manche`,
+  gamesAll: (n, o) => `${n} ${jeux(n)} partout, ${o} manche`,
   gamesAllTiebreak: (n) => `${n} ${jeux(n)} partout, jeu décisif`,
-  setWon: (o, n, hi, lo) => `Jeu et ${o} set ${n}, ${hi} ${jeux(hi)} à ${lo}`,
-  setsAllSuperTiebreak: 'Un set partout, super jeu décisif',
-  matchWon: (n, scores) => `Jeu, set et match ${n}, ${scores.join(' ')}`,
+  setWon: (o, n, hi, lo) => `Jeu et ${o} manche ${n}, ${hi} ${jeux(hi)} à ${lo}`,
+  setsAllSuperTiebreak: 'Une manche partout, super jeu décisif',
+  matchWon: (n, scores) => `Jeu, manche et match ${n}, ${scores.join(' ')}`,
   matchEnd: (n, reason) =>
     `Victoire de ${n} par ${reason === 'retirement' ? 'abandon' : reason === 'disqualification' ? 'disqualification' : 'forfait'}`,
   ordinal: (n) => ORDINALS[n - 1] ?? `${n}e`,

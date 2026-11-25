@@ -50,10 +50,10 @@
     if (o?.tiebreakStarts) h.push(`Jeu décisif : ${names[s.server]} au service`);
     if (o?.superTiebreakStarts) h.push(`Super jeu décisif : ${names[s.server]} au service`);
     if (o?.newBalls) h.push('Balles neuves');
-    if (r.ballsDelayed) h.push('Balles neuves reportées au 2e jeu du set suivant');
+    if (r.ballsDelayed) h.push('Balles neuves reportées au 2e jeu de la manche suivante');
     const sit = pointSituation(s, live.config);
     if (sit.matchPoint) h.push(`Balle de match ${names[sit.matchPoint]}`);
-    else if (sit.setPoint) h.push(`Balle de set ${names[sit.setPoint]}`);
+    else if (sit.setPoint) h.push(`Balle de manche ${names[sit.setPoint]}`);
     else if (sit.breakPoint) h.push('Balle de break');
     return h;
   });
@@ -132,7 +132,7 @@
     {:else if rest && !over}
       {#key rest.start}
         <Countdown
-          label={rest.rest === 'set_break' ? 'Fin de set' : 'Changement de côté'}
+          label={rest.rest === 'set_break' ? 'Fin de manche' : 'Changement de côté'}
           start={rest.start}
           duration={restDuration}
           onStop={() => (dismissedRest = rest.start)}
