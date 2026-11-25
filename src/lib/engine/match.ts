@@ -104,6 +104,8 @@ export interface ReplayResult {
   serveOrderSet: number;
   /** Double : relanceur côté droit de chaque équipe pour la manche en cours. */
   receiveOrder: Record<Side, 0 | 1>;
+  /** Double : tours de service déjà commencés par chaque équipe dans la manche en cours. */
+  serveTurns: Pair;
 }
 
 const SCORING = new Set<MatchEvent['kind']>(['serve', 'point', 'let', 'conduct', 'time_violation', 'set_server', 'adjust', 'end']);
@@ -338,7 +340,22 @@ export function replay(config: MatchConfig, events: readonly MatchEvent[]): Repl
     serveOrder,
     serveOrderSet,
     receiveOrder,
+    serveTurns: { ...turns },
   };
+}
+
+/**
+ * Double : ordre de service (« first ») qui donne, pour chaque équipe, le joueur voulu à son
+ * tour de service en cours (équipe au service) ou au prochain (l'autre équipe). Sert à corriger
+ * les positions en cours de manche sans toucher aux points déjà joués.
+ */
+export function orderFor(r: ReplayResult, want: Record<Side, 0 | 1>): Record<Side, 0 | 1> {
+  const server = r.state.server;
+  const first = (s: Side): 0 | 1 => {
+    const k = s === server ? r.serveTurns[s] - 1 : r.serveTurns[s];
+    return (((want[s] - k) % 2) + 2) % 2 as 0 | 1;
+  };
+  return { A: first('A'), B: first('B') };
 }
 
 /**

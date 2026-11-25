@@ -137,6 +137,8 @@ export interface ServeOrderEvent extends Base {
   first: Record<Side, 0 | 1>;
   /** Relanceur côté droit de chaque équipe ; ne change qu'en début de manche. */
   receive?: Record<Side, 0 | 1>;
+  /** Présent quand l'arbitre corrige les positions en cours de manche. */
+  reason?: string;
 }
 
 export interface NoteEvent extends Base {

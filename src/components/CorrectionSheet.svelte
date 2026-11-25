@@ -2,7 +2,7 @@
   import { untrack } from 'svelte';
   import Sheet from './Sheet.svelte';
   import { describeEntry, scoreBefore } from '../lib/describe';
-  import { other, type LogEntry, type Pair, type Side } from '../lib/engine';
+  import { orderFor, other, type LogEntry, type Pair, type Side } from '../lib/engine';
   import type { LiveMatch } from '../lib/state.svelte';
 
   let {
@@ -41,6 +41,24 @@
     const server = other(live.state.server);
     await live.add({ kind: 'set_server', server, reason: 'Erreur de serveur' });
     onDone(`${names[server]} au service, les points joués restent acquis`);
+  }
+
+  // ---- Double : positions (serveur de chaque équipe, relanceurs côté droit) ----
+  const r0 = untrack(() => live.result);
+  /** Joueur de chaque équipe à son tour de service en cours (équipe au service) ou au prochain. */
+  let serving = $state<Record<Side, 0 | 1>>({
+    A: (r0.state.server === 'A' ? r0.serverIndex : ((r0.serveOrder.A + r0.serveTurns.A) % 2)) as 0 | 1,
+    B: (r0.state.server === 'B' ? r0.serverIndex : ((r0.serveOrder.B + r0.serveTurns.B) % 2)) as 0 | 1,
+  });
+  let receiving = $state<Record<Side, 0 | 1>>({ ...r0.receiveOrder });
+  async function fixPositions() {
+    await live.add({
+      kind: 'serve_order',
+      first: orderFor(live.result, { ...serving }),
+      receive: { ...receiving },
+      reason,
+    });
+    onDone(`Positions corrigées : ${live.playerOf(live.state.server, live.result.serverIndex)} au service`);
   }
 
   // ---- Score fixé à la main ----
@@ -99,6 +117,30 @@
     </button>
     <p class="muted">Les points déjà joués restent acquis. Un mauvais côté de service se corrige simplement au point suivant.</p>
 
+    {#if live.doubles && !live.state.winner}
+      <h3>Positions du double</h3>
+      {#each ['A', 'B'] as const as t (t)}
+        <label for="sv{t}">
+          {t === live.state.server ? 'Sert maintenant' : 'Servira au prochain tour'} pour {names[t]}
+        </label>
+        <div class="seg" id="sv{t}">
+          {#each [0, 1] as const as i (i)}
+            <button aria-pressed={serving[t] === i} onclick={() => (serving = { ...serving, [t]: i })}>{live.playerOf(t, i)}</button>
+          {/each}
+        </div>
+      {/each}
+      {#each ['A', 'B'] as const as t (t)}
+        <label for="rc{t}">Relance côté droit pour {names[t]}</label>
+        <div class="seg" id="rc{t}">
+          {#each [0, 1] as const as i (i)}
+            <button aria-pressed={receiving[t] === i} onclick={() => (receiving = { ...receiving, [t]: i })}>{live.playerOf(t, i)}</button>
+          {/each}
+        </div>
+      {/each}
+      <button onclick={fixPositions}>Corriger les positions</button>
+      <p class="muted">La rotation reprend à partir de ces positions ; les points déjà joués ne changent pas.</p>
+    {/if}
+
     <h3>Dernier recours</h3>
     <button onclick={() => (view = 'adjust')}>Fixer le score à la main</button>
   {:else}
@@ -147,6 +189,10 @@
   }
   .actions {
     padding-left: 16px;
+  }
+  label {
+    display: block;
+    margin-top: 8px;
   }
   .grid2 {
     margin: 8px 0;

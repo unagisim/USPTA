@@ -70,7 +70,9 @@ export function sheetRows(m: StoredMatch, r: ReplayResult, names: Record<Side, s
         return {
           ...base,
           kind: 'other',
-          text: `Positions de la manche : ${first} servent en premier${rcv ? ` ; ${rcv} relancent côté droit` : ''}`,
+          text: e.reason
+            ? `Correction des positions (${e.reason})${rcv ? ` : ${rcv} relancent côté droit` : ''}`
+            : `Positions de la manche : ${first} servent en premier${rcv ? ` ; ${rcv} relancent côté droit` : ''}`,
         };
       }
       default: {

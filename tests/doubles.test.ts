@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { announce, presentation, type AnnounceContext } from '../src/lib/annonces';
-import { FORMATS, receiverIndex } from '../src/lib/engine';
+import { FORMATS, orderFor, receiverIndex } from '../src/lib/engine';
 import { Rec } from './helpers';
 
 const dbl = (format: 'F1' | 'F4' = 'F1') => new Rec(format, { serveOrder: { A: 0, B: 1 } });
@@ -103,5 +103,18 @@ describe('double : relanceurs', () => {
   it('point décisif : choix de l\'équipe en relance', () => {
     const r = new Rec('F4', { serveOrder: { A: 0, B: 0 }, receiveOrder: { A: 0, B: 0 } }).point('A', 3).point('B', 3);
     expect(receiverIndex(r.s, r.config, r.r.receiveOrder)).toBeNull();
+  });
+});
+
+describe('double : correction des positions', () => {
+  it('le bon joueur sert tout de suite, les points joués ne changent pas', () => {
+    const r = dbl().games('A').games('B').point('A'); // 3e jeu : A1 au service
+    expect(who(r)).toBe('A1');
+    const before = r.r.log.map((e) => e.serverIndex);
+    r.add({ kind: 'serve_order', first: orderFor(r.r, { A: 0, B: 0 }), reason: 'Erreur de serveur' });
+    expect(who(r)).toBe('A0');
+    expect(r.r.log.map((e) => e.serverIndex)).toEqual(before);
+    r.point('A', 3); // fin du jeu : B sert avec le joueur demandé
+    expect(who(r)).toBe('B0');
   });
 });
