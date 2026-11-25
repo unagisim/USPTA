@@ -1,21 +1,266 @@
+/*
+ * Couleurs :
+ *   --x       texte posé sur --x-bg
+ *   --x-bg    fond teinté
+ *   --x-strong bordures, traits
+ * Joueur de gauche = bleu, joueur de droite = orange (couleurs liées à la place, pas au joueur).
+ */
 :root {
-  --bg: #ffffff;
-  --fg: #111111;
+  --bg: #f3f5f4;
+  --surface: #ffffff;
+  --surface-2: #e8ecea;
+  --text: #0f1a16;
+  --muted: #55615c;
+  --border: #cfd6d3;
   --accent: #0b3d2e;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  color: var(--fg);
-  background: var(--bg);
+  --accent-fg: #ffffff;
+  --l: #0d2d6b;
+  --l-bg: #dfe8fa;
+  --l-strong: #2e5bc7;
+  --r: #6b2d00;
+  --r-bg: #fde6d3;
+  --r-strong: #d4691f;
+  --ball: #c9e21b;
+  --call-bg: #0b3d2e;
+  --call-fg: #ffffff;
+  --warn: #6a4300;
+  --warn-bg: #fdefcf;
+  --danger: #a32d2d;
+  --danger-bg: #fbe4e4;
+  --radius: 12px;
+  --tap: 52px;
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #101412;
-    --fg: #f2f2f2;
+  :root:not([data-theme='light']):not([data-theme='sun']) {
+    --bg: #0e1311;
+    --surface: #18201c;
+    --surface-2: #222c27;
+    --text: #edf2ef;
+    --muted: #a3b0aa;
+    --border: #33403a;
     --accent: #5fd3a5;
+    --accent-fg: #0b1f17;
+    --l: #dce6fb;
+    --l-bg: #1c2f5c;
+    --l-strong: #8eaaf0;
+    --r: #fde3cd;
+    --r-bg: #5a2a08;
+    --r-strong: #f3a466;
+    --call-bg: #1f4d3c;
+    --call-fg: #ffffff;
+    --warn: #fbd38a;
+    --warn-bg: #4a3206;
+    --danger: #f2a0a0;
+    --danger-bg: #4f1616;
+    color-scheme: dark;
   }
 }
 
+:root[data-theme='dark'] {
+  --bg: #0e1311;
+  --surface: #18201c;
+  --surface-2: #222c27;
+  --text: #edf2ef;
+  --muted: #a3b0aa;
+  --border: #33403a;
+  --accent: #5fd3a5;
+  --accent-fg: #0b1f17;
+  --l: #dce6fb;
+  --l-bg: #1c2f5c;
+  --l-strong: #8eaaf0;
+  --r: #fde3cd;
+  --r-bg: #5a2a08;
+  --r-strong: #f3a466;
+  --call-bg: #1f4d3c;
+  --call-fg: #ffffff;
+  --warn: #fbd38a;
+  --warn-bg: #4a3206;
+  --danger: #f2a0a0;
+  --danger-bg: #4f1616;
+  color-scheme: dark;
+}
+
+/* Plein soleil : blanc pur, noir pur, traits épais. */
+:root[data-theme='sun'] {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #ffffff;
+  --text: #000000;
+  --muted: #000000;
+  --border: #000000;
+  --accent: #000000;
+  --accent-fg: #ffffff;
+  --l: #000000;
+  --l-bg: #cfe0ff;
+  --l-strong: #000000;
+  --r: #000000;
+  --r-bg: #ffd9b8;
+  --r-strong: #000000;
+  --call-bg: #000000;
+  --call-fg: #ffffff;
+  --warn: #000000;
+  --warn-bg: #ffe066;
+  --danger: #ffffff;
+  --danger-bg: #b00000;
+}
+:root[data-theme='sun'] button,
+:root[data-theme='sun'] .card {
+  border-width: 2px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
 body {
   margin: 0;
   background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  min-height: var(--tap);
+  padding: 0 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+}
+button:active {
+  transform: scale(0.98);
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
+  font-weight: 600;
+}
+button.danger {
+  background: var(--danger-bg);
+  border-color: var(--danger-bg);
+  color: var(--danger);
+  font-weight: 600;
+}
+button.ghost {
+  border-color: transparent;
+  background: transparent;
+}
+
+input,
+select,
+textarea {
+  min-height: 48px;
+  width: 100%;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+textarea {
+  padding: 10px 12px;
+  min-height: 80px;
+}
+
+label {
+  display: block;
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 12px;
+}
+h1 {
+  font-size: 22px;
+}
+h2 {
+  font-size: 18px;
+}
+
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.stack > * + * {
+  margin-top: 12px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.topbar h1 {
+  flex: 1;
+  margin: 0;
+}
+
+.notice {
+  background: var(--warn-bg);
+  color: var(--warn);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-weight: 600;
+}
+
+.seg {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.seg button[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
+  font-weight: 600;
 }

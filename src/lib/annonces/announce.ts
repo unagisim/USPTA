@@ -22,6 +22,8 @@ export function scoreCall(s: ScoreState, ctx: AnnounceContext): string {
   const t = ctx.phrases ?? fr;
   const name = (side: Side) => playerName(ctx.players[side], ctx.nameStyle);
   const { A, B } = s.points;
+  // Début de jeu : rien à annoncer.
+  if (A === 0 && B === 0) return '';
   if (s.inTiebreak) {
     if (A === B) return t.tiebreakAll(A);
     const lead: Side = A > B ? 'A' : 'B';
@@ -97,5 +99,5 @@ export function announce(entry: LogEntry, ctx: AnnounceContext): string[] {
   }
 
   if (o.newBalls) lines.push(t.newBalls);
-  return lines;
+  return lines.filter(Boolean);
 }
