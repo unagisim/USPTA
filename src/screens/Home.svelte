@@ -25,10 +25,18 @@
   }
   const date = (ts: number) => new Date(ts).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 
-  async function remove(m: StoredMatch) {
-    if (!confirm(`Supprimer définitivement le match ${who(m)} ? Cette action est irréversible.`)) return;
-    await deleteMatch(m.id);
-    matches = await listMatches();
+  /** Match dont la suppression attend une confirmation. */
+  let confirmId = $state<string | null>(null);
+  let deleteError = $state('');
+  async function remove(id: string) {
+    deleteError = '';
+    try {
+      await deleteMatch(id);
+      matches = matches.filter((m) => m.id !== id);
+      confirmId = null;
+    } catch {
+      deleteError = 'La suppression a échoué. Réessayez.';
+    }
   }
 </script>
 
@@ -61,13 +69,35 @@
 
   {#if done.length}
     <h2>Terminés</h2>
+    {#if deleteError}<p class="error" role="alert">{deleteError}</p>{/if}
     {#each done as m (m.id)}
-      <div class="row">
+      <div class="line" class:confirming={confirmId === m.id}>
         <button class="item" onclick={() => onOpen(m.id)}>
           <strong>{who(m)}</strong>
-          <span class="muted">{date(m.createdAt)} · {score(m)} · {m.info.tournament}</span>
+          <span class="muted">{date(m.createdAt)} · {score(m)}{m.info.tournament ? ` · ${m.info.tournament}` : ''}</span>
         </button>
-        <button class="ghost" aria-label="Supprimer" onclick={() => remove(m)}>✕</button>
+        {#if confirmId === m.id}
+          <div class="confirm" role="alertdialog" aria-label="Confirmer la suppression">
+            <span>Supprimer définitivement ce match et sa feuille ? Cette action est irréversible.</span>
+            <div>
+              <button onclick={() => (confirmId = null)}>Annuler</button>
+              <button class="danger" onclick={() => remove(m.id)}>Supprimer</button>
+            </div>
+          </div>
+        {:else}
+          <button class="trash" aria-label="Supprimer ce match" title="Supprimer" onclick={() => (confirmId = m.id)}>
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"
+              ><path
+                d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /></svg
+            >
+          </button>
+        {/if}
       </div>
     {/each}
   {/if}
@@ -99,8 +129,52 @@
     margin-bottom: 8px;
     text-align: left;
   }
-  .row .item {
+  .line {
+    display: flex;
+    gap: 6px;
+    align-items: stretch;
+    margin-bottom: 8px;
+  }
+  .line .item {
     flex: 1;
+    min-width: 0;
+    margin-bottom: 0;
+  }
+  .line.confirming {
+    flex-direction: column;
+  }
+  .trash {
+    flex: none;
+    width: 48px;
+    padding: 0;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .confirm {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 14px;
+  }
+  .confirm div {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .danger {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: var(--danger-bg);
+    font-weight: 600;
+  }
+  .error {
+    color: var(--danger);
   }
   .install {
     width: 100%;

@@ -57,10 +57,9 @@
   });
 
   const court = $derived(serveCourt(s, live.config));
+  const second = $derived(s.serveNumber === 2);
   const serveInfo = $derived(
-    `${names[s.server]} · ${s.serveNumber === 1 ? '1re balle' : '2e balle'} · ${
-      court === 'right' ? 'à droite' : court === 'left' ? 'à gauche' : 'choix du relanceur'
-    }`,
+    `${names[s.server]} · ${court === 'right' ? 'côté droit' : court === 'left' ? 'côté gauche' : 'choix du relanceur'}`,
   );
 
   // ---- Temps ----
@@ -105,7 +104,6 @@
 
   <Scoreboard score={s} {left} {names} />
 
-  {#if !over}<p class="serve">{serveInfo}</p>{/if}
 
   <div class="call" aria-live="polite">
     {#each call as line, i (i)}<p>{line}</p>{:else}<p class="empty">—</p>{/each}
@@ -148,12 +146,24 @@
       <button class="primary" onclick={onSheet}>Voir la feuille de match</button>
     </div>
   {:else}
-    <div class="serve-row">
-      <button onclick={() => add({ kind: 'serve', call: 'fault' })}>Faute</button>
-      <button onclick={() => add({ kind: 'serve', call: 'net_fault' })}>Filet, faute</button>
-      <button onclick={() => add({ kind: 'serve', call: 'net' })}>Filet</button>
-      <button onclick={() => add({ kind: 'serve', call: 'ace' })}>Ace</button>
-    </div>
+    <section class="serve" class:second aria-label="Service">
+      <div class="serve-head">
+        <span class="num">{second ? '2e service' : '1er service'}</span>
+        <span class="who">{serveInfo}</span>
+      </div>
+      <div class="serve-row">
+        <button onclick={() => add({ kind: 'serve', call: 'fault' })}>
+          {second ? 'Double faute' : 'Faute'}<small>« {fr.fault} »</small>
+        </button>
+        <button onclick={() => add({ kind: 'serve', call: 'net_fault' })}>
+          {second ? 'Filet, double faute' : 'Filet, faute'}<small>« {fr.netFault} »</small>
+        </button>
+        <button onclick={() => add({ kind: 'serve', call: 'net' })}>
+          Filet, bon<small>« {second ? fr.netSecond : fr.netFirst} »</small>
+        </button>
+        <button onclick={() => add({ kind: 'serve', call: 'ace' })}>Ace</button>
+      </div>
+    </section>
 
     <div class="points">
       <button class="pl" onclick={() => add({ kind: 'point', winner: left })}>
@@ -163,7 +173,9 @@
         <small>Point</small>{names[right]}
       </button>
     </div>
-    <button class="let" onclick={() => add({ kind: 'let' })}>Let (point à rejouer)</button>
+    <button class="let" onclick={() => add({ kind: 'let' })}>
+      Let pendant l'échange · point rejoué{second ? ' en 1er service' : ''}
+    </button>
   {/if}
 
   <nav>
@@ -215,9 +227,42 @@
     font-weight: 600;
   }
   .serve {
-    margin: 0;
-    text-align: center;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .serve.second {
+    border-color: var(--warn);
+    background: var(--warn-bg);
+  }
+  .serve-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .num {
+    flex: none;
+    font-size: 18px;
+    font-weight: 800;
+    text-transform: uppercase;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: var(--surface-2);
+  }
+  .second .num {
+    background: var(--warn);
+    color: var(--warn-bg);
+  }
+  .serve-head .who {
+    flex: 1;
+    min-width: 0;
     font-weight: 600;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
   .call {
     background: var(--call-bg);
@@ -275,8 +320,20 @@
     gap: 6px;
   }
   .serve-row button {
-    padding: 0 4px;
-    font-weight: 600;
+    padding: 4px 2px;
+    font-weight: 700;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.15;
+    font-size: 15px;
+  }
+  .serve-row small {
+    font-weight: 500;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
   }
   .points {
     display: grid;
@@ -310,6 +367,9 @@
   }
   .let {
     width: 100%;
+    min-height: 40px;
+    font-size: 14px;
+    color: var(--muted);
   }
   .done button {
     width: 100%;
