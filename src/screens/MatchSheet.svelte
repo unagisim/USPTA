@@ -77,14 +77,14 @@
   </div>
 
   <div class="card">
-    <p><strong>{m.info.tournament || 'Tournoi'}</strong>{m.info.round ? ` · ${m.info.round}` : ''}{m.info.court ? ` · Court ${m.info.court}` : ''}</p>
+    <p><strong>{m.info.tournament || 'Compétition'}</strong>{m.info.round ? ` · ${m.info.round}` : ''}{m.info.court ? ` · Court ${m.info.court}` : ''}</p>
     <p class="muted">
       {FORMATS[m.formatId].label} : {FORMATS[m.formatId].description}<br />
       Juge-arbitre : {m.info.referee || '—'} · Arbitre : {m.info.umpire || '—'}{m.info.umpireLicence ? ` (${m.info.umpireLicence})` : ''}
     </p>
     {#each ['A', 'B'] as const as s (s)}
       {@const p = m.players[s]}
-      <p>{names[s]}{p.club ? ` · ${p.club}` : ''}{p.ranking ? ` · ${p.ranking}` : ''}{p.licence ? ` · ${p.licence}` : ''}</p>
+      <p>{names[s]}{p.club ? ` · ${p.club}` : ''}{p.ranking ? ` · ${p.ranking}` : ''}</p>
     {/each}
   </div>
 

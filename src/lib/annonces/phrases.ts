@@ -36,7 +36,6 @@ export interface Phrases {
 
   newBalls: string;
   time: string;
-  warmup(secondsLeft: number): string;
 }
 
 const ORDINALS = ['premier', 'deuxième', 'troisième', 'quatrième', 'cinquième'];
@@ -81,5 +80,4 @@ export const fr: Phrases = {
 
   newBalls: 'Balles neuves',
   time: 'Time',
-  warmup: (s) => (s >= 5 * 60 ? 'Échauffement, 5 minutes' : s <= 0 ? 'Time' : s >= 120 ? `${s / 60} minutes` : '1 minute'),
 };

@@ -4,7 +4,7 @@
 
   let { onCancel, onCreated }: { onCancel: () => void; onCreated: (id: string) => void } = $props();
 
-  const emptyPlayer = (): Player => ({ civility: 'M.', firstName: '', lastName: '', club: '', ranking: '', licence: '' });
+  const emptyPlayer = (): Player => ({ civility: 'M.', firstName: '', lastName: '', club: '', ranking: '' });
 
   let info = $state<MatchInfo>({ tournament: '', round: '', court: '', referee: '', umpire: '', umpireLicence: '' });
   let players = $state({ A: emptyPlayer(), B: emptyPlayer() });
@@ -65,11 +65,18 @@
 
   <div class="card stack">
     <h2>Match</h2>
-    <div><label for="t">Tournoi</label><input id="t" bind:value={info.tournament} /></div>
+    <div>
+      <label for="t">Compétition ou épreuve</label>
+      <input id="t" bind:value={info.tournament} placeholder="Open de Blagnac, championnat par équipes National 3…" />
+    </div>
     <div class="grid2">
-      <div><label for="tr">Tour</label><input id="tr" bind:value={info.round} placeholder="1/4 de finale" /></div>
+      <div>
+        <label for="tr">Tour, poule ou journée</label>
+        <input id="tr" bind:value={info.round} placeholder="1/4 de finale, poule B, 3e journée…" />
+      </div>
       <div><label for="c">Court</label><input id="c" bind:value={info.court} /></div>
     </div>
+    <p class="muted hint">Ces deux champs ouvrent la présentation du match : « 3e journée, championnat par équipes National 3, opposant… ».</p>
     <div><label for="ja">Juge-arbitre</label><input id="ja" bind:value={info.referee} /></div>
     <div class="grid2">
       <div><label for="u">Arbitre</label><input id="u" bind:value={info.umpire} /></div>
@@ -93,7 +100,6 @@
         <div><label for="cl{side}">Club</label><input id="cl{side}" bind:value={p.club} /></div>
         <div><label for="rk{side}">Classement</label><input id="rk{side}" bind:value={p.ranking} /></div>
       </div>
-      <div><label for="li{side}">N° de licence</label><input id="li{side}" bind:value={p.licence} inputmode="numeric" /></div>
     </div>
   {/each}
 
@@ -119,6 +125,10 @@
 </div>
 
 <style>
+  .hint {
+    font-size: 13px;
+    margin: 0;
+  }
   .wide {
     width: 100%;
     margin-top: 4px;

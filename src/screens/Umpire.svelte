@@ -5,7 +5,7 @@
   import TimeSheet from '../components/TimeSheet.svelte';
   import CorrectionSheet from '../components/CorrectionSheet.svelte';
   import EndSheet from '../components/EndSheet.svelte';
-  import { fr, scoreCall } from '../lib/annonces';
+  import { fr, playCall, scoreCall } from '../lib/annonces';
   import { clock } from '../lib/device';
   import { leftPlayer, other, pointSituation, serveCourt, type EventInput, type Side } from '../lib/engine';
   import { app, type LiveMatch } from '../lib/state.svelte';
@@ -21,8 +21,10 @@
 
   /** Message après une annulation ou une correction ; remplace l'annonce de la dernière saisie. */
   let flash = $state<string[] | null>(null);
-  // Avant le premier point : « Time ».
-  const call = $derived(flash ?? (r.log.length ? live.lastCall : [fr.time]));
+  // Avant le premier point : lancement du match.
+  const call = $derived(
+    flash ?? (r.log.length ? live.lastCall : [playCall(live.m.players[s.server], app.settings.nameStyle)]),
+  );
 
   let panel = $state<'none' | 'sanction' | 'time' | 'correct' | 'end'>('none');
 

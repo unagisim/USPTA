@@ -23,7 +23,8 @@ export interface MatchInfo {
   umpireLicence: string;
 }
 
-export type TossChoice = 'serve' | 'receive' | 'side' | 'defer';
+import type { TossChoice } from './annonces/presentation';
+export type { TossChoice };
 
 export interface Toss {
   winner: Side;
