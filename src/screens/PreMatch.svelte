@@ -1,7 +1,8 @@
 <script lang="ts">
   import Countdown from '../components/Countdown.svelte';
   import { COLORS, type PlayerColor } from '../lib/colors';
-  import type { TossChoice } from '../lib/db';
+  import CoinToss_ from '../components/CoinToss.svelte';
+  import type { CoinToss, TossChoice } from '../lib/db';
   import { ballsRule, presentation, TWO_MINUTES } from '../lib/annonces';
   import { clock } from '../lib/device';
   import { FORMATS, other, PRESENTATION_AT, PRESENTATION_AT_DOUBLES, WARMUP_TWO_MINUTES, type Side } from '../lib/engine';
@@ -63,10 +64,16 @@
     ['defer', "Laisser le choix à l'adversaire"],
   ];
 
-  async function setToss(winner: Side, choice: TossChoice) {
-    m.toss = { winner, choice };
+  async function setToss(winner: Side, choice: TossChoice | null, coin?: CoinToss) {
+    // Le tirage fait avec la pièce de l'application est gardé quand le gagnant fait son choix.
+    const kept = coin ?? (m.toss?.winner === winner ? m.toss?.coin : undefined);
+    m.toss = { winner, choice, ...(kept ? { coin: kept } : {}) };
     if (choice === 'serve') m.firstServer = winner;
     if (choice === 'receive') m.firstServer = other(winner);
+    await live.save();
+  }
+  async function resetToss() {
+    m.toss = null;
     await live.save();
   }
   async function setServer(s: Side) {
@@ -160,7 +167,7 @@
           {#each topics as topic (topic)}<li>{topic}</li>{/each}
         </ul>
       </li>
-      <li>Effectuer le tirage au sort</li>
+      <li>Effectuer le tirage au sort (pièce de l'application ci-dessous, ou vraie pièce)</li>
       <li>Désigner clairement le gagnant du tirage</li>
       <li>Monter sur la chaise et lancer l'échauffement</li>
     </ol>
@@ -191,48 +198,27 @@
   </div>
 
   <div class="card stack">
-    <h2>Échauffement</h2>
-    {#if warmup}
-      {#key warmup.start}
-        <Countdown
-          label="Échauffement"
-          start={warmup.start}
-          duration={app.settings.durations.warmup}
-          alerts={[WARMUP_TWO_MINUTES, presAt, 0]}
-          endText="Fin de l'échauffement"
-          onStop={stopWarmup}
-        />
-      {/key}
-      {#if stage === 'presentation'}
-        <div class="speech call">
-          {#each intro as line (line)}<p class:missing={line.startsWith('[')}>{line}</p>{/each}
-        </div>
-      {:else if stage === 'two_minutes'}
-        <p class="call">« {TWO_MINUTES} »</p>
-      {:else if stage === 'before_two_minutes'}
-        <p class="next">À 2:00 : annoncer « {TWO_MINUTES} »</p>
-      {:else if stage === 'before_presentation'}
-        <p class="next">À {presClock} : présentation du match (ci-dessous)</p>
-      {/if}
-    {:else}
-      <button class="primary" onclick={startWarmup}>Lancer l'échauffement ({clock(app.settings.durations.warmup * 1000)})</button>
-    {/if}
-  </div>
-
-  <div class="card stack">
     <h2>Tirage au sort et placement</h2>
-    <div>
-      <label for="tw">Gagnant du tirage</label>
-      <div class="seg" id="tw">
-        {#each ['A', 'B'] as const as s (s)}
-          <button aria-pressed={m.toss?.winner === s} onclick={() => setToss(s, m.toss?.choice ?? 'serve')}>{name(s)}</button>
-        {/each}
+    <CoinToss_
+      names={{ A: name('A'), B: name('B') }}
+      done={m.toss?.coin ?? null}
+      onResult={(w, coin) => setToss(w, null, coin)}
+      onReset={resetToss}
+    />
+    {#if !m.toss?.coin}
+      <div>
+        <label for="tw">Ou tirage fait avec une vraie pièce : gagnant</label>
+        <div class="seg" id="tw">
+          {#each ['A', 'B'] as const as s (s)}
+            <button aria-pressed={m.toss?.winner === s} onclick={() => setToss(s, m.toss?.choice ?? null)}>{name(s)}</button>
+          {/each}
+        </div>
       </div>
-    </div>
+    {/if}
     {#if m.toss}
       {@const toss = m.toss}
       <div>
-        <label for="tc">Son choix</label>
+        <label for="tc">Choix de {name(toss.winner)}{toss.choice ? '' : ' (à saisir)'}</label>
         <div class="seg" id="tc">
           {#each CHOICES as [c, label] (c)}
             <button aria-pressed={toss.choice === c} onclick={() => setToss(toss.winner, c)}>{label}</button>
@@ -283,9 +269,38 @@
   </div>
 
   <div class="card stack">
+    <h2>Échauffement</h2>
+    {#if warmup}
+      {#key warmup.start}
+        <Countdown
+          label="Échauffement"
+          start={warmup.start}
+          duration={app.settings.durations.warmup}
+          alerts={[WARMUP_TWO_MINUTES, presAt, 0]}
+          endText="Fin de l'échauffement"
+          onStop={stopWarmup}
+        />
+      {/key}
+      {#if stage === 'presentation'}
+        <div class="speech call">
+          {#each intro as line (line)}<p class:missing={line.includes('[')}>{line}</p>{/each}
+        </div>
+      {:else if stage === 'two_minutes'}
+        <p class="call">« {TWO_MINUTES} »</p>
+      {:else if stage === 'before_two_minutes'}
+        <p class="next">À 2:00 : annoncer « {TWO_MINUTES} »</p>
+      {:else if stage === 'before_presentation'}
+        <p class="next">À {presClock} : présentation du match (ci-dessous)</p>
+      {/if}
+    {:else}
+      <button class="primary" onclick={startWarmup}>Lancer l'échauffement ({clock(app.settings.durations.warmup * 1000)})</button>
+    {/if}
+  </div>
+
+  <div class="card stack">
     <h2>Présentation du match <span class="muted">à {presClock}</span></h2>
     <div class="speech">
-      {#each intro as line (line)}<p class:missing={line.startsWith('[')}>{line}</p>{/each}
+      {#each intro as line (line)}<p class:missing={line.includes('[')}>{line}</p>{/each}
     </div>
   </div>
 

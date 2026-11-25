@@ -169,7 +169,7 @@ export function buildSheetPdf(
         m.firstServer === p ? (m.doubles ? 'au service' : '1er serveur') : '',
         m.doubles ? `1er serveur de l'équipe : ${ps[order[p]]?.lastName ?? ''}` : '',
         m.doubles ? `relance côté droit : ${ps[(m.receiveOrder ?? { A: 0, B: 0 })[p]]?.lastName ?? ''}` : '',
-        tossWinner === p ? `tirage gagné (${TOSS_CHOICES[m.toss!.choice]})` : '',
+        tossWinner === p ? `tirage gagné${m.toss!.coin ? ' (pièce de l\'application)' : ''}${m.toss!.choice ? ` : ${TOSS_CHOICES[m.toss!.choice]}` : ''}` : '',
       ].filter(Boolean);
       const full = ps.map((x) => `${x.civility} ${x.firstName} ${x.lastName}`.replace(/ +/g, ' ')).join('\n');
       return [

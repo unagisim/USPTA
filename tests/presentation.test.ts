@@ -43,6 +43,11 @@ describe("annonces d'avant-match", () => {
     );
   });
 
+  it('tirage gagné, choix pas encore fait', () => {
+    const lines = presentation({ competition: '', round: '', players, left: 'A', format: FORMATS.F1, toss: { winner: 'B', choice: null } });
+    expect(lines[2]).toBe('Mme Julie Martin a gagné le tirage au sort et [choix à saisir].');
+  });
+
   it('règles des formats courts', () => {
     expect(formatRule(FORMATS.F6)).toBe(
       'Partie au meilleur des 3 manches de 4 jeux, avec jeu décisif à 3 jeux partout dans les deux premières manches, la troisième manche se joue en super jeu décisif à 10 points, point décisif à égalité.',

@@ -42,9 +42,20 @@ export const SURFACES: [Surface, string][] = [
 import type { TossChoice } from './annonces/presentation';
 export type { TossChoice };
 
+export type CoinFace = 'heads' | 'tails';
+
+/** Tirage fait avec la pièce de l'application : qui a annoncé, quoi, et le résultat. */
+export interface CoinToss {
+  caller: Side;
+  call: CoinFace;
+  result: CoinFace;
+}
+
 export interface Toss {
   winner: Side;
-  choice: TossChoice;
+  /** Choix du gagnant ; null tant qu'il ne l'a pas fait. */
+  choice: TossChoice | null;
+  coin?: CoinToss;
 }
 
 /** setup : saisie ; prematch : contrôles, tirage, échauffement ; live : match ; finished : terminé. */

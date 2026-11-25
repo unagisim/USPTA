@@ -16,7 +16,7 @@ export interface PresentationData {
   /** Joueur à gauche de la chaise au premier jeu. */
   left: Side;
   format: MatchFormat;
-  toss: { winner: Side; choice: TossChoice } | null;
+  toss: { winner: Side; choice: TossChoice | null } | null;
   nameStyle?: NameStyle;
   /** Match par équipes : chaque joueur est présenté avec son club. */
   team?: boolean;
@@ -47,7 +47,8 @@ export function ballsRule(b: BallChange): string {
   return 'Pas de changement de balles';
 }
 
-function tossLine(winner: string, choice: TossChoice, plural: boolean): string {
+function tossLine(winner: string, choice: TossChoice | null, plural: boolean): string {
+  if (!choice) return `${winner} ${plural ? 'ont' : 'a'} gagné le tirage au sort et [choix à saisir].`;
   const c = TOSS_FR[choice];
   return plural ? `${winner} ont gagné le tirage au sort et ${c.replace(/^a /, 'ont ')}.` : `${winner} a gagné le tirage au sort et ${c}.`;
 }
