@@ -14,12 +14,6 @@
   --border: #cfd6d3;
   --accent: #0b3d2e;
   --accent-fg: #ffffff;
-  --l: #0d2d6b;
-  --l-bg: #dfe8fa;
-  --l-strong: #2e5bc7;
-  --r: #6b2d00;
-  --r-bg: #fde6d3;
-  --r-strong: #d4691f;
   --ball: #c9e21b;
   --call-bg: #0b3d2e;
   --call-fg: #ffffff;
@@ -42,12 +36,6 @@
     --border: #33403a;
     --accent: #5fd3a5;
     --accent-fg: #0b1f17;
-    --l: #dce6fb;
-    --l-bg: #1c2f5c;
-    --l-strong: #8eaaf0;
-    --r: #fde3cd;
-    --r-bg: #5a2a08;
-    --r-strong: #f3a466;
     --call-bg: #1f4d3c;
     --call-fg: #ffffff;
     --warn: #fbd38a;
@@ -67,12 +55,6 @@
   --border: #33403a;
   --accent: #5fd3a5;
   --accent-fg: #0b1f17;
-  --l: #dce6fb;
-  --l-bg: #1c2f5c;
-  --l-strong: #8eaaf0;
-  --r: #fde3cd;
-  --r-bg: #5a2a08;
-  --r-strong: #f3a466;
   --call-bg: #1f4d3c;
   --call-fg: #ffffff;
   --warn: #fbd38a;
@@ -92,12 +74,6 @@
   --border: #000000;
   --accent: #000000;
   --accent-fg: #ffffff;
-  --l: #000000;
-  --l-bg: #cfe0ff;
-  --l-strong: #000000;
-  --r: #000000;
-  --r-bg: #ffd9b8;
-  --r-strong: #000000;
   --call-bg: #000000;
   --call-fg: #ffffff;
   --warn: #000000;
@@ -263,4 +239,238 @@ h2 {
   border-color: var(--accent);
   color: var(--accent-fg);
   font-weight: 600;
+}
+
+/* Couleur de chaque joueur, d'après sa tenue (voir lib/colors.ts). */
+.c-blue {
+  --p-swatch: #2e5bc7;
+}
+.c-red {
+  --p-swatch: #d32f2f;
+}
+.c-green {
+  --p-swatch: #2e8b4a;
+}
+.c-yellow {
+  --p-swatch: #f2d000;
+}
+.c-orange {
+  --p-swatch: #f07c1e;
+}
+.c-purple {
+  --p-swatch: #7b3fc4;
+}
+.c-pink {
+  --p-swatch: #e0559b;
+}
+.c-black {
+  --p-swatch: #111111;
+}
+.c-white {
+  --p-swatch: #ffffff;
+}
+.c-grey {
+  --p-swatch: #8a938f;
+}
+.c-blue {
+  --p-bg: #dfe8fa;
+  --p-fg: #0d2d6b;
+  --p-strong: #2e5bc7;
+}
+.c-red {
+  --p-bg: #fbdcdc;
+  --p-fg: #6b0d0d;
+  --p-strong: #c62828;
+}
+.c-green {
+  --p-bg: #dcf3e2;
+  --p-fg: #0d4a22;
+  --p-strong: #2e8b4a;
+}
+.c-yellow {
+  --p-bg: #fff4c2;
+  --p-fg: #4a3b00;
+  --p-strong: #c9a800;
+}
+.c-orange {
+  --p-bg: #fde6d3;
+  --p-fg: #6b2d00;
+  --p-strong: #d4691f;
+}
+.c-purple {
+  --p-bg: #ece0fa;
+  --p-fg: #3d1066;
+  --p-strong: #7b3fc4;
+}
+.c-pink {
+  --p-bg: #fde0ef;
+  --p-fg: #6b0d40;
+  --p-strong: #d63c8a;
+}
+.c-black {
+  --p-bg: #2b2b2b;
+  --p-fg: #ffffff;
+  --p-strong: #000000;
+}
+.c-white {
+  --p-bg: #ffffff;
+  --p-fg: #1a1a1a;
+  --p-strong: #8a938f;
+}
+.c-grey {
+  --p-bg: #e3e6e5;
+  --p-fg: #2a2f2d;
+  --p-strong: #7a8480;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']):not([data-theme='sun']) .c-blue {
+    --p-bg: #1c2f5c;
+    --p-fg: #dce6fb;
+    --p-strong: #8eaaf0;
+  }
+  :root:not([data-theme='light']):not([data-theme='sun']) .c-red {
+    --p-bg: #5a1616;
+    --p-fg: #fbdcdc;
+    --p-strong: #f08a8a;
+  }
+  :root:not([data-theme='light']):not([data-theme='sun']) .c-green {
+    --p-bg: #163f24;
+    --p-fg: #d4f2dc;
+    --p-strong: #7fd39a;
+  }
+  :root:not([data-theme='light']):not([data-theme='sun']) .c-yellow {
+    --p-bg: #4a3d00;
+    --p-fg: #fff4c2;
+    --p-strong: #f0d34a;
+  }
+  :root:not([data-theme='light']):not([data-theme='sun']) .c-orange {
+    --p-bg: #5a2a08;
+    --p-fg: #fde3cd;
+    --p-strong: #f3a466;
+  }
+  :root:not([data-theme='light']):not([data-theme='sun']) .c-purple {
+    --p-bg: #3a1d5c;
+    --p-fg: #ece0fa;
+    --p-strong: #b993ec;
+  }
+  :root:not([data-theme='light']):not([data-theme='sun']) .c-pink {
+    --p-bg: #5a1638;
+    --p-fg: #fde0ef;
+    --p-strong: #f08abd;
+  }
+  :root:not([data-theme='light']):not([data-theme='sun']) .c-black {
+    --p-bg: #000000;
+    --p-fg: #ffffff;
+    --p-strong: #8a938f;
+  }
+  :root:not([data-theme='light']):not([data-theme='sun']) .c-white {
+    --p-bg: #f4f4f4;
+    --p-fg: #111111;
+    --p-strong: #ffffff;
+  }
+  :root:not([data-theme='light']):not([data-theme='sun']) .c-grey {
+    --p-bg: #3a403e;
+    --p-fg: #e3e6e5;
+    --p-strong: #a3b0aa;
+  }
+}
+:root[data-theme='dark'] .c-blue {
+  --p-bg: #1c2f5c;
+  --p-fg: #dce6fb;
+  --p-strong: #8eaaf0;
+}
+:root[data-theme='dark'] .c-red {
+  --p-bg: #5a1616;
+  --p-fg: #fbdcdc;
+  --p-strong: #f08a8a;
+}
+:root[data-theme='dark'] .c-green {
+  --p-bg: #163f24;
+  --p-fg: #d4f2dc;
+  --p-strong: #7fd39a;
+}
+:root[data-theme='dark'] .c-yellow {
+  --p-bg: #4a3d00;
+  --p-fg: #fff4c2;
+  --p-strong: #f0d34a;
+}
+:root[data-theme='dark'] .c-orange {
+  --p-bg: #5a2a08;
+  --p-fg: #fde3cd;
+  --p-strong: #f3a466;
+}
+:root[data-theme='dark'] .c-purple {
+  --p-bg: #3a1d5c;
+  --p-fg: #ece0fa;
+  --p-strong: #b993ec;
+}
+:root[data-theme='dark'] .c-pink {
+  --p-bg: #5a1638;
+  --p-fg: #fde0ef;
+  --p-strong: #f08abd;
+}
+:root[data-theme='dark'] .c-black {
+  --p-bg: #000000;
+  --p-fg: #ffffff;
+  --p-strong: #8a938f;
+}
+:root[data-theme='dark'] .c-white {
+  --p-bg: #f4f4f4;
+  --p-fg: #111111;
+  --p-strong: #ffffff;
+}
+:root[data-theme='dark'] .c-grey {
+  --p-bg: #3a403e;
+  --p-fg: #e3e6e5;
+  --p-strong: #a3b0aa;
+}
+:root[data-theme='sun'] .c-blue {
+  --p-bg: #cfe0ff;
+  --p-fg: #000000;
+  --p-strong: #000000;
+}
+:root[data-theme='sun'] .c-red {
+  --p-bg: #ffcccc;
+  --p-fg: #000000;
+  --p-strong: #000000;
+}
+:root[data-theme='sun'] .c-green {
+  --p-bg: #c8f0d2;
+  --p-fg: #000000;
+  --p-strong: #000000;
+}
+:root[data-theme='sun'] .c-yellow {
+  --p-bg: #fff09a;
+  --p-fg: #000000;
+  --p-strong: #000000;
+}
+:root[data-theme='sun'] .c-orange {
+  --p-bg: #ffd9b8;
+  --p-fg: #000000;
+  --p-strong: #000000;
+}
+:root[data-theme='sun'] .c-purple {
+  --p-bg: #e2d0fa;
+  --p-fg: #000000;
+  --p-strong: #000000;
+}
+:root[data-theme='sun'] .c-pink {
+  --p-bg: #ffd0e8;
+  --p-fg: #000000;
+  --p-strong: #000000;
+}
+:root[data-theme='sun'] .c-black {
+  --p-bg: #000000;
+  --p-fg: #ffffff;
+  --p-strong: #000000;
+}
+:root[data-theme='sun'] .c-white {
+  --p-bg: #ffffff;
+  --p-fg: #000000;
+  --p-strong: #000000;
+}
+:root[data-theme='sun'] .c-grey {
+  --p-bg: #dddddd;
+  --p-fg: #000000;
+  --p-strong: #000000;
 }

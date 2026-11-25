@@ -1,5 +1,6 @@
 <script lang="ts">
   import Countdown from '../components/Countdown.svelte';
+  import { COLORS, type PlayerColor } from '../lib/colors';
   import type { TossChoice } from '../lib/db';
   import { ballsRule, presentation, TWO_MINUTES } from '../lib/annonces';
   import { clock } from '../lib/device';
@@ -67,6 +68,10 @@
   }
   async function setServer(s: Side) {
     m.firstServer = s;
+    await live.save();
+  }
+  async function setColor(s: Side, c: PlayerColor) {
+    m.colors = { ...live.colors, [s]: c };
     await live.save();
   }
   async function setLeft(s: Side) {
@@ -148,6 +153,30 @@
       <li>Monter sur la chaise et lancer l'échauffement</li>
     </ol>
   </details>
+
+  <div class="card stack">
+    <h2>Couleur de la tenue</h2>
+    <p class="muted hint">Chaque joueur garde sa couleur tout le match : boutons de point, tableau de score, sanctions et feuille.</p>
+    {#each ['A', 'B'] as const as s (s)}
+      <div>
+        <label for="col{s}">{name(s)}</label>
+        <div class="swatches" id="col{s}" role="radiogroup" aria-label="Couleur de {name(s)}">
+          {#each COLORS as [c, label] (c)}
+            {@const taken = live.colors[other(s)] === c}
+            <button
+              class="swatch c-{c}"
+              role="radio"
+              aria-checked={live.colors[s] === c}
+              aria-label={label}
+              title={taken ? `${label} : déjà prise` : label}
+              disabled={taken}
+              onclick={() => setColor(s, c)}
+            ></button>
+          {/each}
+        </div>
+      </div>
+    {/each}
+  </div>
 
   <div class="card stack">
     <h2>Échauffement</h2>
@@ -261,6 +290,30 @@
   }
   ul li {
     padding: 2px 0;
+  }
+  .hint {
+    font-size: 13px;
+    margin: 0;
+  }
+  .swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .swatch {
+    width: 44px;
+    min-height: 44px;
+    padding: 0;
+    border-radius: 50%;
+    background: var(--p-swatch);
+    border: 2px solid var(--border);
+  }
+  .swatch[aria-checked='true'] {
+    outline: 3px solid var(--text);
+    outline-offset: 2px;
+  }
+  .swatch:disabled {
+    opacity: 0.25;
   }
   .next {
     margin: 0;

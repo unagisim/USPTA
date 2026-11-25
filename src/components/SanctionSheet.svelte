@@ -56,8 +56,8 @@
   {:else if !player}
     <p class="muted">Joueur concerné :</p>
     <div class="players">
-      <button class="pl" onclick={() => (player = left)}>{live.name(left)}</button>
-      <button class="pr" onclick={() => (player = other(left))}>{live.name(other(left))}</button>
+      <button class="player c-{live.colors[left]}" onclick={() => (player = left)}>{live.name(left)}</button>
+      <button class="player c-{live.colors[other(left)]}" onclick={() => (player = other(left))}>{live.name(other(left))}</button>
     </div>
   {:else if !kind}
     {@const p = player}
@@ -109,15 +109,10 @@
     font-weight: 700;
     width: 100%;
   }
-  .pl {
-    background: var(--l-bg);
-    color: var(--l);
-    border-color: var(--l-strong);
-  }
-  .pr {
-    background: var(--r-bg);
-    color: var(--r);
-    border-color: var(--r-strong);
+  .player {
+    background: var(--p-bg);
+    color: var(--p-fg);
+    border-color: var(--p-strong);
   }
   small {
     color: var(--muted);

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { DEFAULT_COLORS } from '../lib/colors';
   import { saveMatch, SURFACES, uid, type MatchInfo } from '../lib/db';
   import { FORMAT_LIST, type BallChange, type FormatId, type Player } from '../lib/engine';
 
@@ -47,6 +48,7 @@
       firstServer: 'A',
       leftAtStart: 'A',
       toss: null,
+      colors: { ...DEFAULT_COLORS },
       checklist: {},
       events: [],
       phase: 'prematch',

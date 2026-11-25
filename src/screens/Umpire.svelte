@@ -110,7 +110,7 @@
     <button class="ghost" onclick={onSheet}>Feuille</button>
   </header>
 
-  <Scoreboard score={s} {left} {names} />
+  <Scoreboard score={s} {left} {names} colors={live.colors} />
 
 
   <div class="call" aria-live="polite">
@@ -176,10 +176,10 @@
     </section>
 
     <div class="points">
-      <button class="pl" onclick={() => add({ kind: 'point', winner: left })}>
+      <button class="player c-{live.colors[left]}" onclick={() => add({ kind: 'point', winner: left })}>
         <small>Point</small>{names[left]}
       </button>
-      <button class="pr" onclick={() => add({ kind: 'point', winner: right })}>
+      <button class="player c-{live.colors[right]}" onclick={() => add({ kind: 'point', winner: right })}>
         <small>Point</small>{names[right]}
       </button>
     </div>
@@ -365,15 +365,10 @@
     font-size: 14px;
     font-weight: 500;
   }
-  .pl {
-    background: var(--l-bg);
-    color: var(--l);
-    border-color: var(--l-strong);
-  }
-  .pr {
-    background: var(--r-bg);
-    color: var(--r);
-    border-color: var(--r-strong);
+  .player {
+    background: var(--p-bg);
+    color: var(--p-fg);
+    border-color: var(--p-strong);
   }
   .let {
     width: 100%;

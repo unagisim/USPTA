@@ -1,5 +1,6 @@
 // État partagé de l'application : réglages, horloge, et le match ouvert.
 
+import { DEFAULT_COLORS } from './colors';
 import { announce, playerName, type AnnounceContext } from './annonces';
 import { configOf, loadSettings, saveMatch, saveSettings, defaultSettings, type Settings, type StoredMatch } from './db';
 import { lastUndoable, replay, type EventInput, type MatchEvent, type Side } from './engine';
@@ -41,6 +42,8 @@ export class LiveMatch {
   }
 
   config = $derived(configOf(this.m));
+  /** Couleur de chaque joueur (tenue), la même tout le match. */
+  colors = $derived(this.m.colors ?? DEFAULT_COLORS);
   result = $derived(replay(this.config, this.m.events));
   state = $derived(this.result.state);
   ctx: AnnounceContext = $derived({

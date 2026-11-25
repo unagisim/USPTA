@@ -2,6 +2,7 @@
 // à chaque saisie ; le score est toujours recalculé par le moteur.
 
 import Dexie, { type EntityTable } from 'dexie';
+import type { PlayerColor } from './colors';
 import {
   DEFAULT_DURATIONS,
   FORMATS,
@@ -60,6 +61,8 @@ export interface StoredMatch {
   firstServer: Side;
   leftAtStart: Side;
   toss: Toss | null;
+  /** Couleur de chaque joueur, d'après sa tenue. */
+  colors?: Record<Side, PlayerColor>;
   /** Étapes cochées de la procédure guidée. */
   checklist: Record<string, boolean>;
   events: MatchEvent[];

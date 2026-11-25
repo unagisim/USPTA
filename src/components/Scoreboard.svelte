@@ -1,9 +1,15 @@
 <script lang="ts">
+  import type { PlayerColor } from '../lib/colors';
   import { formatPoints, other, type ScoreState, type Side } from '../lib/engine';
 
   // Tableau de score en lignes, comme un afficheur de court.
-  // Le joueur à gauche de la chaise est en haut (bleu), celui de droite en bas (orange).
-  let { score, left, names }: { score: ScoreState; left: Side; names: Record<Side, string> } = $props();
+  // Le joueur à gauche de la chaise est en haut, celui de droite en bas ; chacun garde la couleur de sa tenue.
+  let {
+    score,
+    left,
+    names,
+    colors,
+  }: { score: ScoreState; left: Side; names: Record<Side, string>; colors: Record<Side, PlayerColor> } = $props();
 
   const order = $derived([left, other(left)] as Side[]);
   const pts = $derived(formatPoints(score));
@@ -25,7 +31,7 @@
   </thead>
   <tbody>
     {#each order as s, i (s)}
-      <tr class={i === 0 ? 'l' : 'r'} class:winner={score.winner === s}>
+      <tr class="c-{colors[s]}" class:winner={score.winner === s}>
         <td class="who">
           <span class="srv">{#if live && score.server === s}<span class="ball" aria-label="Au service"></span>{/if}</span>
           <span class="name">{names[s]}</span>
@@ -85,11 +91,12 @@
     white-space: nowrap;
     text-overflow: ellipsis;
   }
-  tr.l td.who {
-    border-left: 6px solid var(--l-strong);
-  }
-  tr.r td.who {
-    border-left: 6px solid var(--r-strong);
+  /* Bande de la couleur du joueur, avec un filet clair pour que le noir reste visible. */
+  td.who {
+    padding-left: 10px;
+    box-shadow:
+      inset 8px 0 0 var(--p-swatch),
+      inset 9px 0 0 #ffffff59;
   }
   .srv {
     display: inline-flex;

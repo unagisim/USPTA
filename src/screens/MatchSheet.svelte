@@ -83,7 +83,12 @@
     {/if}
     <table class="stats">
       <thead>
-        <tr><th></th><th class="pa">{m.players.A.lastName}</th><th class="pb">{m.players.B.lastName}</th></tr>
+        <tr>
+          <th></th>
+          {#each ['A', 'B'] as const as p (p)}
+            <th><span class="dot c-{live.colors[p]}"></span>{m.players[p].lastName}</th>
+          {/each}
+        </tr>
       </thead>
       <tbody>
         {#each statRows as [label, a, b] (label)}
@@ -120,6 +125,16 @@
 </div>
 
 <style>
+  .dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 5px;
+    vertical-align: -1px;
+    background: var(--p-swatch);
+    border: 1px solid var(--border);
+  }
   .sets {
     margin: 8px 0;
   }
