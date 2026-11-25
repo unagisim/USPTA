@@ -10,7 +10,7 @@
     warning: 'avertissement',
     point: '1 point de pénalité',
     three_points: '3 points de pénalité',
-    disqualification: 'disqualification (juge-arbitre)',
+    disqualification: 'appel du juge-arbitre',
   };
 
   let player = $state<Side | null>(null);

@@ -42,6 +42,6 @@ describe("annonces d'avant-match", () => {
     expect(ballsRule({ mode: 'regulation', first: 7, every: 9, warmupGames: 2 })).toBe(
       'Changement de balles après 7 jeux (échauffement compris), puis tous les 9 jeux',
     );
-    expect(playCall(players.B)).toBe('Première manche, au service Mme Julie Martin, prêts, jouez !');
+    expect(playCall(players.B)).toBe('Première manche, au service Mme Martin, prêts, jouez !');
   });
 });

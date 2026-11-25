@@ -26,5 +26,7 @@ export const PRESENTATION_AT = 40;
 /** Alertes (vibration, bip) de l'échauffement, en secondes restantes. */
 export const WARMUP_CALLS = [WARMUP_TWO_MINUTES, PRESENTATION_AT, 0];
 
+/** Annonce « Reprise », en secondes avant la fin d'une pause. */
+export const RESUME_CALL_AT = 30;
 /** Alertes (vibration, bip) des chronomètres de pause, en secondes restantes. */
-export const REST_ALERTS = [10, 0];
+export const REST_ALERTS = [RESUME_CALL_AT, 0];

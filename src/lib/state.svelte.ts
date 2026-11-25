@@ -46,7 +46,7 @@ export class LiveMatch {
   ctx: AnnounceContext = $derived({
     config: this.config,
     players: this.m.players,
-    nameStyle: app.settings.nameStyle,
+    team: !!this.m.info.team,
   });
 
   name(side: Side): string {

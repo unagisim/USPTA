@@ -59,12 +59,13 @@
         <button aria-pressed={app.settings.theme === t} onclick={() => updateSettings({ theme: t })}>{label}</button>
       {/each}
     </div>
-    <label for="ns">Noms dans les annonces</label>
+    <label for="ns">Noms à l'écran et dans la présentation du match</label>
     <div class="seg" id="ns">
       {#each styles as [s, label] (s)}
         <button aria-pressed={app.settings.nameStyle === s} onclick={() => updateSettings({ nameStyle: s })}>{label}</button>
       {/each}
     </div>
+    <p class="muted">Les annonces du score suivent l'usage FFT : « Mme Kerber », « Tsonga », ou le nom du club en match par équipes.</p>
   </div>
 
   <div class="card stack">

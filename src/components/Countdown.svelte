@@ -9,6 +9,7 @@
     duration,
     alerts = [10, 0],
     endText = 'Time',
+    cue,
     onStop,
   }: {
     label: string;
@@ -16,6 +17,8 @@
     duration: number;
     alerts?: number[];
     endText?: string;
+    /** Annonce à faire avant la fin : « Reprise » à 30 s. */
+    cue?: { at: number; text: string };
     onStop?: () => void;
   } = $props();
 
@@ -37,10 +40,10 @@
   });
 </script>
 
-<div class="cd" class:over class:soon={!over && remaining <= 10_000}>
+<div class="cd" class:over class:soon={!over && remaining <= (cue ? cue.at : 10) * 1000}>
   <span class="label">{label}</span>
   <span class="time">{over ? `+${clock(-remaining)}` : clock(remaining)}</span>
-  {#if over}<span class="end">« {endText} »</span>{/if}
+  {#if over}<span class="end">« {endText} »</span>{:else if cue && remaining <= cue.at * 1000}<span class="end">« {cue.text} »</span>{/if}
   {#if onStop}<button class="ghost stop" onclick={onStop}>Arrêter</button>{/if}
 </div>
 

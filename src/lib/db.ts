@@ -21,6 +21,8 @@ export interface MatchInfo {
   referee: string;
   umpire: string;
   umpireLicence: string;
+  /** Match par équipes : le score s'annonce avec le nom du club. */
+  team?: boolean;
 }
 
 import type { TossChoice } from './annonces/presentation';
@@ -65,7 +67,21 @@ export interface Settings {
   theme: Theme;
 }
 
+/** Motifs d'application du code de conduite FFT. */
 export const DEFAULT_OFFENCES = [
+  'Jet de balle',
+  'Jet de raquette',
+  'Grossièreté audible',
+  'Insulte',
+  'Geste obscène',
+  'Agression physique',
+  'Coaching',
+  'Dépassement de temps intentionnel',
+  'Comportement antisportif',
+];
+
+/** Première liste livrée, remplacée par la liste FFT si l'arbitre ne l'a pas modifiée. */
+const OLD_OFFENCES = [
   'obscénité audible',
   'obscénité visible',
   'abus de balle',
@@ -114,7 +130,9 @@ export const plain = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
 export async function loadSettings(): Promise<Settings> {
   const s = await db.settings.get('settings');
-  return { ...defaultSettings(), ...s };
+  const merged = { ...defaultSettings(), ...s };
+  if (JSON.stringify(merged.offences) === JSON.stringify(OLD_OFFENCES)) merged.offences = [...DEFAULT_OFFENCES];
+  return merged;
 }
 
 export async function saveSettings(s: Settings): Promise<void> {

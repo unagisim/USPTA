@@ -48,7 +48,7 @@ export interface MatchConfig {
   balls: BallChange;
 }
 
-export type Civility = 'M.' | 'Mme';
+export type Civility = 'M.' | 'Mme' | 'Mlle';
 
 export interface Player {
   civility: Civility;

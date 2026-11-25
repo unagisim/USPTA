@@ -90,7 +90,7 @@
       nameStyle: app.settings.nameStyle,
     }),
   );
-  const firstCall = $derived(playCall(m.players[m.firstServer], app.settings.nameStyle));
+  const firstCall = $derived(playCall(m.players[m.firstServer], !!m.info.team));
 
   async function startWarmup() {
     await live.add({ kind: 'timer', timer: 'warmup', action: 'start' });

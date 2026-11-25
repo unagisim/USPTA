@@ -1,7 +1,7 @@
 // Annonces d'avant-match : présentation à la fin de l'échauffement et lancement du match.
 
 import { other, type BallChange, type MatchFormat, type Player, type Side } from '../engine';
-import { playerName } from './announce';
+import { callName, playerName } from './announce';
 
 export type TossChoice = 'serve' | 'receive' | 'side' | 'defer';
 
@@ -58,8 +58,8 @@ export function presentation(d: PresentationData): string[] {
 }
 
 /** Annonce juste avant le premier service. */
-export function playCall(server: Player, nameStyle?: 'full' | 'short'): string {
-  return `Première manche, au service ${playerName(server, nameStyle)}, prêts, jouez !`;
+export function playCall(server: Player, team = false): string {
+  return `Première manche, au service ${callName(server, team)}, prêts, jouez !`;
 }
 
 export const TWO_MINUTES = '2 minutes';

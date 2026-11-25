@@ -7,22 +7,42 @@ export interface Phrases {
   /** Score dans un jeu, serveur en premier : « 15-0 », « 30 partout ». */
   pointScore(server: string, receiver: string): string;
   pointsAll(label: string): string;
+  /** Première égalité du jeu : « 40 A ». */
+  fortyAll: string;
+  /** Égalités suivantes. */
   deuce: string;
   decidingPoint: string;
   advantage(name: string): string;
-  /** Jeu décisif : « 3-2 M. Paul Dupont », « 3 partout ». */
+  /** Jeu décisif : « 2-1 Djokovic », « 1-1 ». */
   tiebreakLead(hi: number, lo: number, name: string): string;
   tiebreakAll(n: number): string;
 
-  game(name: string): string;
-  gamesLead(name: string, hi: number, lo: number, setOrdinal: string): string;
-  gamesAll(n: number, setOrdinal: string): string;
-  gamesAllTiebreak(n: number): string;
-  setWon(setOrdinal: string, name: string, hi: number, lo: number): string;
-  setsAllSuperTiebreak: string;
-  matchWon(name: string, scores: string[]): string;
-  matchEnd(name: string, reason: 'retirement' | 'disqualification' | 'walkover'): string;
-  ordinal(n: number): string;
+  /** Fin de jeu en une phrase : « Jeu X, X mène 2 jeux à 1. » */
+  game(name: string, score: string): string;
+  /** « premier jeu », « premier jeu, deuxième manche » ; `set` vide pour la première manche. */
+  firstGame(set: string): string;
+  gamesLead(name: string, hi: number, lo: number): string;
+  gamesAll(n: number): string;
+  /** « Au service Mme Kerber », après le changement de côté du premier jeu. */
+  serving(name: string): string;
+  /** « 6 jeux partout première manche, jeu décisif ». */
+  gamesAllTiebreak(n: number, set: string): string;
+  /** « première manche », « deuxième manche », « dernière manche ». */
+  setName(n: number, last: boolean): string;
+  /** « Jeu et deuxième manche X, 7 jeux à 6, une manche partout. » */
+  setWon(set: string, name: string, hi: number, lo: number, setsAll: boolean, superTiebreak: boolean): string;
+  /** « Jeu, set et match Mlle Stephens 2 manches à 1, 1/6-6/2-7/5 ». */
+  matchWon(name: string, won: number, lost: number, scores: string[]): string;
+  /** Fin anticipée : « Mesdames, messieurs, M. X est contraint d'abandonner, jeu set et match Y 6/3 1/0. » */
+  matchEnd(
+    loser: string,
+    feminine: boolean,
+    winner: string,
+    reason: 'retirement' | 'disqualification' | 'walkover',
+    scores: string[],
+  ): string;
+  /** Début d'une interruption (pluie, nuit…). */
+  interrupted: string;
 
   fault: string;
   netFault: string;
@@ -51,22 +71,30 @@ const CONDUCT_FR: Record<ConductLevel, string> = {
 export const fr: Phrases = {
   pointScore: (s, r) => `${s}-${r}`,
   pointsAll: (l) => `${l} partout`,
+  fortyAll: '40 A',
   deuce: 'Égalité',
-  decidingPoint: 'Point décisif, choix du relanceur',
+  decidingPoint: '40 A, point décisif, choix au relanceur',
   advantage: (n) => `Avantage ${n}`,
   tiebreakLead: (hi, lo, n) => `${hi}-${lo} ${n}`,
-  tiebreakAll: (n) => `${n} partout`,
+  tiebreakAll: (n) => `${n}-${n}`,
 
-  game: (n) => `Jeu ${n}.`,
-  gamesLead: (n, hi, lo, o) => `${n} mène ${hi} ${jeux(hi)} à ${lo}, ${o} manche`,
-  gamesAll: (n, o) => `${n} ${jeux(n)} partout, ${o} manche`,
-  gamesAllTiebreak: (n) => `${n} ${jeux(n)} partout, jeu décisif`,
-  setWon: (o, n, hi, lo) => `Jeu et ${o} manche ${n}, ${hi} ${jeux(hi)} à ${lo}`,
-  setsAllSuperTiebreak: 'Une manche partout, super jeu décisif',
-  matchWon: (n, scores) => `Jeu, manche et match ${n}, ${scores.join(' ')}`,
-  matchEnd: (n, reason) =>
-    `Victoire de ${n} par ${reason === 'retirement' ? 'abandon' : reason === 'disqualification' ? 'disqualification' : 'forfait'}`,
-  ordinal: (n) => ORDINALS[n - 1] ?? `${n}e`,
+  game: (n, score) => `Jeu ${n}, ${score}.`,
+  firstGame: (set) => (set ? `premier jeu, ${set}` : 'premier jeu'),
+  gamesLead: (n, hi, lo) => `${n} mène ${hi} ${jeux(hi)} à ${lo}`,
+  gamesAll: (n) => `${n} partout`,
+  serving: (n) => `Au service ${n}`,
+  gamesAllTiebreak: (n, set) => `${n} ${jeux(n)} partout ${set}, jeu décisif`,
+  setName: (n, last) => (last ? 'dernière manche' : `${ORDINALS[n - 1] ?? `${n}e`} manche`),
+  setWon: (set, n, hi, lo, all, stb) =>
+    `Jeu et ${set} ${n}, ${hi} ${jeux(hi)} à ${lo}${all ? ', une manche partout' : ''}${stb ? ', super jeu décisif' : ''}.`,
+  matchWon: (n, won, lost, scores) => `Jeu, set et match ${n} ${won} manches à ${lost}, ${scores.join('-')}`,
+  matchEnd: (loser, fem, winner, reason, scores) => {
+    if (reason === 'walkover') return `Victoire de ${winner} par forfait`;
+    const e = fem ? 'e' : '';
+    const what = reason === 'retirement' ? `est contraint${e} d'abandonner` : `est disqualifié${e}`;
+    return `Mesdames, messieurs, ${loser} ${what}, jeu set et match ${[winner, ...scores].join(' ')}.`;
+  },
+  interrupted: 'Mesdames, messieurs, la partie est interrompue',
 
   fault: 'Faute',
   netFault: 'Filet, faute',
@@ -74,9 +102,15 @@ export const fr: Phrases = {
   netSecond: 'Filet, deuxième service',
   rallyLet: 'Let',
 
-  conduct: (o, l, n) => `Infraction au code de conduite, ${o}, ${CONDUCT_FR[l]}, ${n}`,
+  // Motif, étape, nom ; à la dernière étape, le juge-arbitre est appelé (annonce suivante).
+  conduct: (o, l, n) => {
+    const motif = o.charAt(0).toLowerCase() + o.slice(1);
+    return l === 'disqualification'
+      ? `Violation du code de conduite, ${motif}, ${n}`
+      : `Violation du code de conduite, ${motif}, ${CONDUCT_FR[l]}, ${n}`;
+  },
   timeViolation: (l, n) => `Dépassement de temps, ${l === 'warning' ? 'avertissement' : 'point de pénalité'}, ${n}`,
-  callReferee: 'Appeler le juge-arbitre',
+  callReferee: 'Le Juge-Arbitre a été appelé sur le court',
 
   newBalls: 'Balles neuves',
   time: 'Time',

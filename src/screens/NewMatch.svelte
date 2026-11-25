@@ -6,7 +6,7 @@
 
   const emptyPlayer = (): Player => ({ civility: 'M.', firstName: '', lastName: '', club: '', ranking: '' });
 
-  let info = $state<MatchInfo>({ tournament: '', round: '', court: '', referee: '', umpire: '', umpireLicence: '' });
+  let info = $state<MatchInfo>({ tournament: '', round: '', court: '', referee: '', umpire: '', umpireLicence: '', team: false });
   let players = $state({ A: emptyPlayer(), B: emptyPlayer() });
   let formatId = $state<FormatId>('F2');
   let ballMode = $state<BallChange['mode']>('none');
@@ -23,6 +23,10 @@
   async function create() {
     if (!players.A.lastName.trim() || !players.B.lastName.trim()) {
       error = 'Indiquez au moins le nom des deux joueurs.';
+      return;
+    }
+    if (info.team && (!players.A.club?.trim() || !players.B.club?.trim())) {
+      error = 'Match par équipes : indiquez le club des deux joueurs, il sert aux annonces du score.';
       return;
     }
     const balls: BallChange =
@@ -77,6 +81,10 @@
       <div><label for="c">Court</label><input id="c" bind:value={info.court} /></div>
     </div>
     <p class="muted hint">Ces deux champs ouvrent la présentation du match : « 3e journée, championnat par équipes National 3, opposant… ».</p>
+    <label class="check">
+      <input type="checkbox" bind:checked={info.team} />
+      Match par équipes : le score s'annonce avec le nom du club
+    </label>
     <div><label for="ja">Juge-arbitre</label><input id="ja" bind:value={info.referee} /></div>
     <div class="grid2">
       <div><label for="u">Arbitre</label><input id="u" bind:value={info.umpire} /></div>
@@ -91,6 +99,7 @@
       <div class="seg">
         <button aria-pressed={p.civility === 'M.'} onclick={() => (p.civility = 'M.')}>M.</button>
         <button aria-pressed={p.civility === 'Mme'} onclick={() => (p.civility = 'Mme')}>Mme</button>
+        <button aria-pressed={p.civility === 'Mlle'} onclick={() => (p.civility = 'Mlle')}>Mlle</button>
       </div>
       <div class="grid2">
         <div><label for="fn{side}">Prénom</label><input id="fn{side}" bind:value={p.firstName} autocapitalize="words" /></div>
@@ -125,6 +134,18 @@
 </div>
 
 <style>
+  .check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    color: var(--text);
+  }
+  .check input {
+    width: 24px;
+    min-height: 24px;
+    flex: none;
+  }
   .hint {
     font-size: 13px;
     margin: 0;

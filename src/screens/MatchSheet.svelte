@@ -63,7 +63,7 @@
   );
 
   function sanctionText(level: string): string {
-    return { warning: 'avertissement', point: '1 point de pénalité', three_points: '3 points de pénalité', disqualification: 'disqualification' }[level] ?? level;
+    return { warning: 'avertissement', point: '1 point de pénalité', three_points: '3 points de pénalité', disqualification: 'appel du juge-arbitre' }[level] ?? level;
   }
 
   let filter = $state<'all' | 'key'>('key');

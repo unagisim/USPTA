@@ -7,7 +7,7 @@
   import EndSheet from '../components/EndSheet.svelte';
   import { fr, playCall, scoreCall } from '../lib/annonces';
   import { clock } from '../lib/device';
-  import { leftPlayer, other, pointSituation, serveCourt, type EventInput, type Side } from '../lib/engine';
+  import { leftPlayer, other, pointSituation, REST_ALERTS, RESUME_CALL_AT, serveCourt, type EventInput, type Side } from '../lib/engine';
   import { app, type LiveMatch } from '../lib/state.svelte';
 
   let { live, onExit, onSheet }: { live: LiveMatch; onExit: () => void; onSheet: () => void } = $props();
@@ -23,7 +23,12 @@
   let flash = $state<string[] | null>(null);
   // Avant le premier point : lancement du match.
   const call = $derived(
-    flash ?? (r.log.length ? live.lastCall : [playCall(live.m.players[s.server], app.settings.nameStyle)]),
+    flash ??
+      (r.activeTimer?.timer === 'interruption'
+        ? [fr.interrupted]
+        : r.log.length
+          ? live.lastCall
+          : [playCall(live.m.players[s.server], !!live.m.info.team)]),
   );
 
   let panel = $state<'none' | 'sanction' | 'time' | 'correct' | 'end'>('none');
@@ -66,6 +71,7 @@
 
   // ---- Temps ----
   let dismissedRest = $state(0);
+  const resume = { at: RESUME_CALL_AT, text: 'Reprise' };
   const rest = $derived(r.lastRest && r.lastRest.start !== dismissedRest && !r.activeTimer ? r.lastRest : null);
   const restDuration = $derived(rest?.rest === 'set_break' ? app.settings.durations.setBreak : app.settings.durations.changeover);
   /** Fin du dernier point, pour le temps écoulé entre les points (sans limite FFT). */
@@ -121,7 +127,7 @@
     {#if active}
       {#if activeDuration !== null}
         {#key active.start}
-          <Countdown label={activeLabel} start={active.start} duration={activeDuration} onStop={stopActive} />
+          <Countdown label={activeLabel} start={active.start} duration={activeDuration} alerts={REST_ALERTS} cue={resume} onStop={stopActive} />
         {/key}
       {:else}
         <div class="elapsed strong">
@@ -135,6 +141,8 @@
           label={rest.rest === 'set_break' ? 'Fin de manche' : 'Changement de côté'}
           start={rest.start}
           duration={restDuration}
+          alerts={REST_ALERTS}
+          cue={resume}
           onStop={() => (dismissedRest = rest.start)}
         />
       {/key}
